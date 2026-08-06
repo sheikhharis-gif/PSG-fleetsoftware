@@ -187,10 +187,12 @@ BASE_TEMPLATE = '''
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['trip_list','trip_add','trip_edit','trip_delete'] else '' }}" href="{{ url_for('trip_list') }}"><i class="bi bi-geo-alt me-2 text-primary"></i>Trip Logs</a></li>
                 </ul>
                 {% endcall %}
-                {% call navgroup('Fleet', 'bi-truck', ['vehicle_list','vehicle_add','vehicle_edit','vehicle_delete','vehicle_type_config','vehicle_type_add','vehicle_type_edit','vehicle_type_delete','wheeler_add','wheeler_edit','wheeler_delete','maintenance_list','maintenance_add','maintenance_edit','maintenance_delete','fuel_log_list','fuel_log_add','fuel_log_edit','fuel_log_delete','tracking_dashboard']) %}
+                {% call navgroup('Fleet', 'bi-truck', ['vehicle_list','vehicle_add','vehicle_edit','vehicle_delete','vehicle_type_config','vehicle_type_add','vehicle_type_edit','vehicle_type_delete','wheeler_add','wheeler_edit','wheeler_delete','vehicle_tyres_select','vehicle_tyres','vehicle_tyre_edit','vehicle_tyre_delete','vehicle_permits_select','vehicle_permits','maintenance_list','maintenance_add','maintenance_edit','maintenance_delete','fuel_log_list','fuel_log_add','fuel_log_edit','fuel_log_delete','tracking_dashboard']) %}
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vehicle_list','vehicle_add','vehicle_edit','vehicle_delete'] else '' }}" href="{{ url_for('vehicle_list') }}"><i class="bi bi-truck me-2 text-primary"></i>Vehicles</a></li>
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vehicle_type_config','vehicle_type_add','vehicle_type_edit','vehicle_type_delete','wheeler_add','wheeler_edit','wheeler_delete'] else '' }}" href="{{ url_for('vehicle_type_config') }}"><i class="bi bi-tags me-2 text-primary"></i>Vehicle Types & Wheelers</a></li>
+                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vehicle_tyres_select','vehicle_tyres','vehicle_tyre_edit','vehicle_tyre_delete'] else '' }}" href="{{ url_for('vehicle_tyres_select') }}"><i class="bi bi-record-circle me-2 text-primary"></i>Tyre Management</a></li>
+                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vehicle_permits_select','vehicle_permits'] else '' }}" href="{{ url_for('vehicle_permits_select') }}"><i class="bi bi-file-earmark-check me-2 text-primary"></i>Permits & Compliance</a></li>
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['maintenance_list','maintenance_add','maintenance_edit','maintenance_delete'] else '' }}" href="{{ url_for('maintenance_list') }}"><i class="bi bi-wrench me-2 text-primary"></i>Maintenance</a></li>
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['fuel_log_list','fuel_log_add','fuel_log_edit','fuel_log_delete'] else '' }}" href="{{ url_for('fuel_log_list') }}"><i class="bi bi-fuel-pump me-2 text-primary"></i>Fuel Logs</a></li>
                     <li><a class="dropdown-item {{ 'active' if request.endpoint == 'tracking_dashboard' else '' }}" href="{{ url_for('tracking_dashboard') }}"><i class="bi bi-map me-2 text-primary"></i>Live Tracking</a></li>
@@ -1054,193 +1056,23 @@ VEHICLE_FORM_TEMPLATE = '''
                     </div>
                 </div>
 
-                <!-- Insurance Card -->
+                {% if vehicle %}
+                <!-- Permits, Insurance, Taxation & Tyres moved to dedicated pages (reached via search picker) -->
                 <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-                    <div class="card-header bg-white py-3 px-4 border-0" style="background: linear-gradient(90deg, #fef9e3 0%, #ffffff 100%);">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-3">
-                                <i class="bi bi-shield-check text-warning fs-5"></i>
-                            </div>
-                            <h6 class="fw-bold text-warning mb-0 text-uppercase tracking-wide">Vehicle Insurance</h6>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.insurance_issue_date(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.insurance_expiry_date(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
+                    <div class="card-body p-4 d-flex gap-3 flex-wrap">
+                        <a href="{{ url_for('vehicle_permits', vehicle_id=vehicle.id) }}" class="btn btn-outline-primary fw-bold rounded-pill px-4">
+                            <i class="bi bi-file-earmark-check me-1"></i> Manage Permits & Compliance
+                        </a>
+                        <a href="{{ url_for('vehicle_tyres', vehicle_id=vehicle.id) }}" class="btn btn-outline-primary fw-bold rounded-pill px-4">
+                            <i class="bi bi-record-circle me-1"></i> Manage Tyres
+                        </a>
                     </div>
                 </div>
-
-                <!-- Taxation Card -->
-                <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-                    <div class="card-header bg-white py-3 px-4 border-0" style="background: linear-gradient(90deg, #e6f7ec 0%, #ffffff 100%);">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-success bg-opacity-10 p-2 me-3">
-                                <i class="bi bi-receipt text-success fs-5"></i>
-                            </div>
-                            <h6 class="fw-bold text-success mb-0 text-uppercase tracking-wide">Taxation / Token Tax</h6>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.taxation_issue_date(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.taxation_expiry_date(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                    </div>
+                {% else %}
+                <div class="alert alert-light border rounded-4 small text-muted mb-4">
+                    <i class="bi bi-info-circle me-1"></i> Save this vehicle first to manage its Permits &amp; Compliance and Tyres.
                 </div>
-
-                <!-- Provincial Permits Card -->
-                <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-                    <div class="card-header bg-white py-3 px-4 border-0" style="background: linear-gradient(90deg, #e9f0ff 0%, #ffffff 100%);">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-info bg-opacity-10 p-2 me-3">
-                                <i class="bi bi-postcard text-info fs-5"></i>
-                            </div>
-                            <h6 class="fw-bold text-info mb-0 text-uppercase tracking-wide">Provincial Permits</h6>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        <!-- Sindh -->
-                        <div class="row g-3 mb-4 pb-2 border-bottom">
-                            <div class="col-12">
-                                <span class="badge bg-info bg-opacity-25 text-info px-3 py-2">SINDH</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.sindh_permit_issue(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.sindh_permit_expiry(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                        <!-- Punjab -->
-                        <div class="row g-3 mb-4 pb-2 border-bottom">
-                            <div class="col-12">
-                                <span class="badge bg-info bg-opacity-25 text-info px-3 py-2">PUNJAB</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.punjab_permit_issue(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.punjab_permit_expiry(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                        <!-- KPK -->
-                        <div class="row g-3 mb-4 pb-2 border-bottom">
-                            <div class="col-12">
-                                <span class="badge bg-info bg-opacity-25 text-info px-3 py-2">KHYBER PAKHTUNKHWA</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.kpk_permit_issue(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.kpk_permit_expiry(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                        <!-- Balochistan -->
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <span class="badge bg-info bg-opacity-25 text-info px-3 py-2">BALOCHISTAN</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.balochistan_permit_issue(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.balochistan_permit_expiry(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FITNESS CERTIFICATES CARD (Light background, dark text for clarity) -->
-                <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-                    <div class="card-header bg-white py-3 px-4 border-0" style="background: linear-gradient(90deg, #e0f2f1 0%, #ffffff 100%);">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-teal-light p-2 me-3">
-                                <i class="bi bi-clipboard-check text-teal-dark fs-5"></i>
-                            </div>
-                            <h6 class="fw-bold text-teal-dark mb-0 text-uppercase tracking-wide">Fitness Certificates</h6>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        <!-- Sindh -->
-                        <div class="row g-3 mb-4 pb-2 border-bottom">
-                            <div class="col-12">
-                                <span class="badge bg-teal-soft text-teal-dark px-3 py-2 fw-semibold rounded-pill">SINDH</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.fitness_issue_sindh(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.fitness_expiry_sindh(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                        <!-- Punjab -->
-                        <div class="row g-3 mb-4 pb-2 border-bottom">
-                            <div class="col-12">
-                                <span class="badge bg-teal-soft text-teal-dark px-3 py-2 fw-semibold rounded-pill">PUNJAB</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.fitness_issue_punjab(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.fitness_expiry_punjab(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                        <!-- KPK -->
-                        <div class="row g-3 mb-4 pb-2 border-bottom">
-                            <div class="col-12">
-                                <span class="badge bg-teal-soft text-teal-dark px-3 py-2 fw-semibold rounded-pill">KHYBER PAKHTUNKHWA</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.fitness_issue_kpk(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.fitness_expiry_kpk(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                        <!-- Balochistan -->
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <span class="badge bg-teal-soft text-teal-dark px-3 py-2 fw-semibold rounded-pill">BALOCHISTAN</span>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Issue Date</label>
-                                {{ form.fitness_issue_balochistan(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Expiry Date</label>
-                                {{ form.fitness_expiry_balochistan(class="form-control border-0 bg-light", type="date") }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
 
             <!-- RIGHT COLUMN: Status & Mileage -->
@@ -2641,6 +2473,398 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+{% endblock %}
+'''
+
+VEHICLE_SEARCH_PICKER_STYLE = '''
+<style>
+    :root { --indigo-600: #0ea5e9; --indigo-dark: #0c4a6e; --slate-900: #0f172a; --slate-800: #1e293b; --slate-400: #94a3b8; }
+    .fw-extrabold { font-weight: 800; }
+    .btn-indigo { background-color: var(--indigo-600); color: white; border: none; border-radius: 8px; }
+    .btn-indigo:hover { background-color: var(--indigo-dark); color: white; }
+    .corp-input { padding: 0.6rem 0.9rem; border: 2px solid #f1f5f9; border-radius: 10px; font-size: 0.9rem; background-color: #f8fafc; }
+    .corp-input:focus { background-color: #ffffff; border-color: var(--indigo-600); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.08); outline: none; }
+    .enterprise-table thead th { background-color: #f8fafc; color: var(--slate-400); font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; padding: 0.85rem 0.75rem; border-bottom: 1px solid #edf2f7; }
+    .enterprise-table tbody tr { transition: all 0.2s; border-bottom: 1px solid #f1f5f9; }
+    .enterprise-table tbody tr:hover { background-color: #f8fafc; }
+    .picker-list-group .list-group-item { border: 1px solid #f1f5f9; border-radius: 10px !important; margin-bottom: 6px; transition: all 0.15s; }
+    .picker-list-group .list-group-item:hover { background-color: #f0f9ff; border-color: var(--indigo-600); transform: translateX(2px); }
+    .breadcrumb-item + .breadcrumb-item::before { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%23cbd5e1'/%3E%3C/svg%3E"); }
+</style>
+'''
+
+VEHICLE_TYRES_SELECT_TEMPLATE = '''
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('vehicle_list') }}" class="text-decoration-none text-slate-400">Vehicles</a></li>
+            <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Tyre Management</li>
+        </ol>
+    </nav>
+    <h3 class="fw-extrabold text-slate-900 mb-4"><i class="bi bi-record-circle text-indigo-600 me-2"></i>Tyre Management</h3>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <label class="fw-bold text-slate-800 mb-2">Select Vehicle #</label>
+                <input type="text" id="vehicleSearchInput" class="form-control corp-input mb-3" placeholder="Type vehicle number..." autofocus>
+                <div id="noVehicleResult" class="alert alert-light border text-center small d-none">No vehicle matches your search.</div>
+                <div class="list-group picker-list-group" id="vehicleResultList" style="max-height: 420px; overflow-y: auto;">
+                    {% for v in vehicles %}
+                    <a href="{{ url_for('vehicle_tyres', vehicle_id=v.id) }}" class="list-group-item list-group-item-action vehicle-result-item d-flex justify-content-between align-items-center" data-number="{{ v.vehicle_number }}">
+                        <span class="fw-bold">{{ v.vehicle_number }}</span>
+                        <span class="text-muted small">{{ v.vehicle_type or '' }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+''' + VEHICLE_SEARCH_PICKER_STYLE + '''
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('vehicleSearchInput');
+    const items = document.querySelectorAll('.vehicle-result-item');
+    const noResult = document.getElementById('noVehicleResult');
+    input.addEventListener('input', function () {
+        const q = input.value.trim().toUpperCase();
+        let visible = 0;
+        items.forEach(function (item) {
+            const match = (item.dataset.number || '').toUpperCase().indexOf(q) > -1;
+            item.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        noResult.classList.toggle('d-none', !(q.length && visible === 0));
+    });
+});
+</script>
+{% endblock %}
+'''
+
+VEHICLE_TYRES_TEMPLATE = '''
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('vehicle_list') }}" class="text-decoration-none text-slate-400">Vehicles</a></li>
+                    <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Tyre Management</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-slate-900 mb-0"><i class="bi bi-record-circle text-indigo-600 me-2"></i>{{ vehicle.vehicle_number }}</h3>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('vehicle_tyres_select') }}" class="btn btn-light border fw-bold me-2"><i class="bi bi-arrow-left-right me-1"></i>Change Vehicle</a>
+            <a href="{{ url_for('vehicle_edit', vehicle_id=vehicle.id) }}" class="btn btn-light border fw-bold"><i class="bi bi-pencil-square me-1"></i>Edit Vehicle</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3">
+        <div class="row text-center g-3">
+            <div class="col"><div class="small text-slate-400 fw-bold">VEHICLE #</div><div class="fw-bold text-slate-900">{{ vehicle.vehicle_number }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">MAKE</div><div class="fw-bold text-slate-900">{{ vehicle.make or '--' }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">MODEL</div><div class="fw-bold text-slate-900">{{ vehicle.model_year or '--' }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">TYPE</div><div class="fw-bold text-slate-900">{{ vehicle.vehicle_type or '--' }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">CURRENT KM</div><div class="fw-bold text-slate-900">{{ vehicle.current_km or 0 }}</div></div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+            <h6 class="fw-bold text-slate-900 mb-0"><i class="bi bi-record-circle text-indigo-600 me-2"></i>Tyre Details</h6>
+        </div>
+        <div class="card-body px-4 pb-4 pt-0">
+            <form method="post" class="row g-2 align-items-end mb-4">
+                <div class="col-md-2">
+                    <label class="small fw-bold text-slate-400">MAKE</label>
+                    {{ form.make(class="form-control corp-input") }}
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold text-slate-400">TYRE #</label>
+                    {{ form.tyre_number(class="form-control corp-input") }}
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold text-slate-400">INSTALLED DATE</label>
+                    {{ form.installed_date(class="form-control corp-input", type="date") }}
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold text-slate-400">KM</label>
+                    {{ form.installed_km(class="form-control corp-input") }}
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold text-slate-400">PRICE</label>
+                    {{ form.price(class="form-control corp-input") }}
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-indigo fw-bold w-100"><i class="bi bi-plus-lg me-1"></i>Add Tyre</button>
+                </div>
+            </form>
+
+            <input type="text" id="tyreSearch" class="form-control corp-input mb-3" style="max-width: 320px;" placeholder="Search tyres...">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 enterprise-table">
+                    <thead><tr><th>MAKE</th><th>TYRE #</th><th>INSTALLED DATE</th><th>KM</th><th>PRICE</th><th class="text-end pe-2">ACTION</th></tr></thead>
+                    <tbody id="tyreTableBody">
+                        {% for t in tyres %}
+                        <tr>
+                            <td>{{ t.make or '--' }}</td>
+                            <td class="fw-bold">{{ t.tyre_number }}</td>
+                            <td>{{ t.installed_date or '--' }}</td>
+                            <td>{{ t.installed_km or '--' }}</td>
+                            <td>{{ t.price or '--' }}</td>
+                            <td class="text-end pe-2">
+                                <button type="button" class="btn btn-sm btn-light text-warning border-0 edit-tyre-btn"
+                                    data-edit-url="{{ url_for('vehicle_tyre_edit', vehicle_id=vehicle.id, tyre_id=t.id) }}"
+                                    data-make="{{ t.make or '' }}" data-number="{{ t.tyre_number }}"
+                                    data-date="{{ t.installed_date or '' }}" data-km="{{ t.installed_km or '' }}" data-price="{{ t.price or '' }}"
+                                    title="Edit"><i class="bi bi-pencil-square"></i></button>
+                                <form method="post" action="{{ url_for('vehicle_tyre_delete', vehicle_id=vehicle.id, tyre_id=t.id) }}" class="d-inline" onsubmit="return confirm('Delete tyre {{ t.tyre_number }}?')">
+                                    <button type="submit" class="btn btn-sm btn-light text-danger border-0" title="Delete"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center py-4 text-slate-400">No tyres recorded for this vehicle yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Tyre Modal -->
+<div class="modal fade" id="tyreEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <form method="post" id="tyreEditForm" action="">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold">Edit Tyre</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="small fw-bold text-slate-400">MAKE</label><input type="text" name="make" id="tyreEditMake" class="form-control corp-input"></div>
+                    <div class="mb-2"><label class="small fw-bold text-slate-400">TYRE #</label><input type="text" name="tyre_number" id="tyreEditNumber" class="form-control corp-input" required></div>
+                    <div class="mb-2"><label class="small fw-bold text-slate-400">INSTALLED DATE</label><input type="date" name="installed_date" id="tyreEditDate" class="form-control corp-input"></div>
+                    <div class="mb-2"><label class="small fw-bold text-slate-400">KM</label><input type="number" name="installed_km" id="tyreEditKm" class="form-control corp-input"></div>
+                    <div class="mb-2"><label class="small fw-bold text-slate-400">PRICE</label><input type="number" step="0.01" name="price" id="tyreEditPrice" class="form-control corp-input"></div>
+                </div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-indigo fw-bold">Save</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+''' + VEHICLE_SEARCH_PICKER_STYLE + '''
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('tyreSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const q = searchInput.value.trim().toLowerCase();
+            document.querySelectorAll('#tyreTableBody tr').forEach(function (row) {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+    }
+    const tyreModal = new bootstrap.Modal(document.getElementById('tyreEditModal'));
+    document.querySelectorAll('.edit-tyre-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('tyreEditForm').action = this.dataset.editUrl;
+            document.getElementById('tyreEditMake').value = this.dataset.make;
+            document.getElementById('tyreEditNumber').value = this.dataset.number;
+            document.getElementById('tyreEditDate').value = this.dataset.date;
+            document.getElementById('tyreEditKm').value = this.dataset.km;
+            document.getElementById('tyreEditPrice').value = this.dataset.price;
+            tyreModal.show();
+        });
+    });
+});
+</script>
+{% endblock %}
+'''
+
+VEHICLE_PERMITS_SELECT_TEMPLATE = '''
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('vehicle_list') }}" class="text-decoration-none text-slate-400">Vehicles</a></li>
+            <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Permits & Compliance</li>
+        </ol>
+    </nav>
+    <h3 class="fw-extrabold text-slate-900 mb-4"><i class="bi bi-file-earmark-check text-indigo-600 me-2"></i>Permits &amp; Compliance</h3>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <label class="fw-bold text-slate-800 mb-2">Select Vehicle #</label>
+                <input type="text" id="vehicleSearchInput" class="form-control corp-input mb-3" placeholder="Type vehicle number..." autofocus>
+                <div id="noVehicleResult" class="alert alert-light border text-center small d-none">No vehicle matches your search.</div>
+                <div class="list-group picker-list-group" id="vehicleResultList" style="max-height: 420px; overflow-y: auto;">
+                    {% for v in vehicles %}
+                    <a href="{{ url_for('vehicle_permits', vehicle_id=v.id) }}" class="list-group-item list-group-item-action vehicle-result-item d-flex justify-content-between align-items-center" data-number="{{ v.vehicle_number }}">
+                        <span class="fw-bold">{{ v.vehicle_number }}</span>
+                        <span class="text-muted small">{{ v.vehicle_type or '' }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+''' + VEHICLE_SEARCH_PICKER_STYLE + '''
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('vehicleSearchInput');
+    const items = document.querySelectorAll('.vehicle-result-item');
+    const noResult = document.getElementById('noVehicleResult');
+    input.addEventListener('input', function () {
+        const q = input.value.trim().toUpperCase();
+        let visible = 0;
+        items.forEach(function (item) {
+            const match = (item.dataset.number || '').toUpperCase().indexOf(q) > -1;
+            item.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        noResult.classList.toggle('d-none', !(q.length && visible === 0));
+    });
+});
+</script>
+{% endblock %}
+'''
+
+VEHICLE_PERMITS_TEMPLATE = '''
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('vehicle_list') }}" class="text-decoration-none text-slate-400">Vehicles</a></li>
+                    <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Permits & Compliance</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-slate-900 mb-0"><i class="bi bi-file-earmark-check text-indigo-600 me-2"></i>{{ vehicle.vehicle_number }}</h3>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('vehicle_permits_select') }}" class="btn btn-light border fw-bold me-2"><i class="bi bi-arrow-left-right me-1"></i>Change Vehicle</a>
+            <a href="{{ url_for('vehicle_edit', vehicle_id=vehicle.id) }}" class="btn btn-light border fw-bold"><i class="bi bi-pencil-square me-1"></i>Edit Vehicle</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 p-3">
+        <div class="row text-center g-3">
+            <div class="col"><div class="small text-slate-400 fw-bold">VEHICLE #</div><div class="fw-bold text-slate-900">{{ vehicle.vehicle_number }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">MAKE</div><div class="fw-bold text-slate-900">{{ vehicle.make or '--' }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">MODEL</div><div class="fw-bold text-slate-900">{{ vehicle.model_year or '--' }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">TYPE</div><div class="fw-bold text-slate-900">{{ vehicle.vehicle_type or '--' }}</div></div>
+            <div class="col"><div class="small text-slate-400 fw-bold">CURRENT KM</div><div class="fw-bold text-slate-900">{{ vehicle.current_km or 0 }}</div></div>
+        </div>
+    </div>
+
+    <form method="post">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h6 class="fw-bold text-slate-900 mb-0"><i class="bi bi-shield-check text-indigo-600 me-2"></i>Insurance &amp; Taxation</h6>
+            </div>
+            <div class="card-body px-4 pb-4 pt-0">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="small fw-bold text-slate-400">INSURANCE ISSUE</label>
+                        {{ form.insurance_issue_date(class="form-control corp-input", type="date") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small fw-bold text-slate-400">INSURANCE EXPIRY</label>
+                        {{ form.insurance_expiry_date(class="form-control corp-input", type="date") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small fw-bold text-slate-400">TAXATION ISSUE</label>
+                        {{ form.taxation_issue_date(class="form-control corp-input", type="date") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small fw-bold text-slate-400">TAXATION EXPIRY</label>
+                        {{ form.taxation_expiry_date(class="form-control corp-input", type="date") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h6 class="fw-bold text-slate-900 mb-0"><i class="bi bi-postcard text-indigo-600 me-2"></i>Provincial Permits &amp; Fitness</h6>
+            </div>
+            <div class="card-body px-4 pb-4 pt-0">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="border rounded-4 p-3 h-100">
+                            <span class="badge bg-indigo-600 bg-opacity-10 text-indigo-600 px-3 py-2 mb-3">SINDH</span>
+                            <label class="small fw-bold text-slate-400 d-block mt-2">Permit Issue</label>
+                            {{ form.sindh_permit_issue(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-slate-400 d-block">Permit Expiry</label>
+                            {{ form.sindh_permit_expiry(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Issue</label>
+                            {{ form.fitness_issue_sindh(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Expiry</label>
+                            {{ form.fitness_expiry_sindh(class="form-control corp-input", type="date") }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded-4 p-3 h-100">
+                            <span class="badge bg-indigo-600 bg-opacity-10 text-indigo-600 px-3 py-2 mb-3">PUNJAB</span>
+                            <label class="small fw-bold text-slate-400 d-block mt-2">Permit Issue</label>
+                            {{ form.punjab_permit_issue(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-slate-400 d-block">Permit Expiry</label>
+                            {{ form.punjab_permit_expiry(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Issue</label>
+                            {{ form.fitness_issue_punjab(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Expiry</label>
+                            {{ form.fitness_expiry_punjab(class="form-control corp-input", type="date") }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded-4 p-3 h-100">
+                            <span class="badge bg-indigo-600 bg-opacity-10 text-indigo-600 px-3 py-2 mb-3">KPK</span>
+                            <label class="small fw-bold text-slate-400 d-block mt-2">Permit Issue</label>
+                            {{ form.kpk_permit_issue(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-slate-400 d-block">Permit Expiry</label>
+                            {{ form.kpk_permit_expiry(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Issue</label>
+                            {{ form.fitness_issue_kpk(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Expiry</label>
+                            {{ form.fitness_expiry_kpk(class="form-control corp-input", type="date") }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded-4 p-3 h-100">
+                            <span class="badge bg-indigo-600 bg-opacity-10 text-indigo-600 px-3 py-2 mb-3">BALOCHISTAN</span>
+                            <label class="small fw-bold text-slate-400 d-block mt-2">Permit Issue</label>
+                            {{ form.balochistan_permit_issue(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-slate-400 d-block">Permit Expiry</label>
+                            {{ form.balochistan_permit_expiry(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Issue</label>
+                            {{ form.fitness_issue_balochistan(class="form-control corp-input mb-2", type="date") }}
+                            <label class="small fw-bold text-danger d-block">Fitness Expiry</label>
+                            {{ form.fitness_expiry_balochistan(class="form-control corp-input", type="date") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-indigo fw-bold px-5 py-2"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+        </div>
+    </form>
+</div>
+''' + VEHICLE_SEARCH_PICKER_STYLE + '''
 {% endblock %}
 '''
 
@@ -6129,6 +6353,10 @@ template_strings = {
     'vehicle_list.html': VEHICLE_LIST_TEMPLATE,
     'vehicle_form.html': VEHICLE_FORM_TEMPLATE,
     'vehicle_type_config.html': VEHICLE_TYPE_CONFIG_TEMPLATE,
+    'vehicle_tyres_select.html': VEHICLE_TYRES_SELECT_TEMPLATE,
+    'vehicle_tyres.html': VEHICLE_TYRES_TEMPLATE,
+    'vehicle_permits_select.html': VEHICLE_PERMITS_SELECT_TEMPLATE,
+    'vehicle_permits.html': VEHICLE_PERMITS_TEMPLATE,
     'client_list.html': CLIENT_LIST_TEMPLATE,
     'client_form.html': CLIENT_FORM_TEMPLATE,
     'client_rates.html': CLIENT_RATES_TEMPLATE,
@@ -6410,6 +6638,18 @@ class FuelLog(db.Model):
     odometer_reading = db.Column(db.Integer, nullable=False)
     remarks = db.Column(db.Text)
 
+class VehicleTyre(db.Model):
+    __tablename__ = 'vehicle_tyres'
+    id = db.Column(db.Integer, primary_key=True)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'), nullable=False)
+    vehicle = db.relationship('Vehicle', backref=db.backref('tyres', cascade='all, delete-orphan'))
+    make = db.Column(db.String(100))
+    tyre_number = db.Column(db.String(50), nullable=False)
+    installed_date = db.Column(db.Date)
+    installed_km = db.Column(db.Integer)
+    price = db.Column(db.Numeric(10, 2))
+    __table_args__ = (db.UniqueConstraint('vehicle_id', 'tyre_number', name='uq_vehicle_tyre_number'),)
+
 # --------------------- Models (Operations) ---------------------
 class Job(db.Model):
     __tablename__ = 'jobs'
@@ -6637,6 +6877,35 @@ class TripForm(Form):
     rate = FloatField('Rate', validators=[DataRequired()])
     detention = FloatField('Detention', default=0)
     cargo_ownership = SelectField('Cargo Ownership', choices=[('company','Company Owned'),('client','Client Cargo')])
+
+class VehicleTyreForm(Form):
+    make = StringField('Make', validators=[Optional()])
+    tyre_number = StringField('Tyre Number', validators=[DataRequired()])
+    installed_date = DateField('Installed Date', format='%Y-%m-%d', validators=[Optional()])
+    installed_km = IntegerField('Installed KM', validators=[Optional()])
+    price = FloatField('Price', validators=[Optional()])
+
+class VehiclePermitsForm(Form):
+    insurance_issue_date = DateField('Insurance Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    insurance_expiry_date = DateField('Insurance Expiry Date', format='%Y-%m-%d', validators=[Optional()])
+    taxation_issue_date = DateField('Taxation Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    taxation_expiry_date = DateField('Taxation Expiry Date', format='%Y-%m-%d', validators=[Optional()])
+    sindh_permit_issue = DateField('Sindh Permit Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    sindh_permit_expiry = DateField('Sindh Permit Expiry', format='%Y-%m-%d', validators=[Optional()])
+    punjab_permit_issue = DateField('Punjab Permit Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    punjab_permit_expiry = DateField('Punjab Permit Expiry', format='%Y-%m-%d', validators=[Optional()])
+    kpk_permit_issue = DateField('KPK Permit Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    kpk_permit_expiry = DateField('KPK Permit Expiry', format='%Y-%m-%d', validators=[Optional()])
+    balochistan_permit_issue = DateField('Balochistan Permit Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    balochistan_permit_expiry = DateField('Balochistan Permit Expiry', format='%Y-%m-%d', validators=[Optional()])
+    fitness_issue_sindh = DateField('Fitness Sindh Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    fitness_expiry_sindh = DateField('Fitness Sindh Expiry', format='%Y-%m-%d', validators=[Optional()])
+    fitness_issue_punjab = DateField('Fitness Punjab Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    fitness_expiry_punjab = DateField('Fitness Punjab Expiry', format='%Y-%m-%d', validators=[Optional()])
+    fitness_issue_kpk = DateField('Fitness KPK Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    fitness_expiry_kpk = DateField('Fitness KPK Expiry', format='%Y-%m-%d', validators=[Optional()])
+    fitness_issue_balochistan = DateField('Fitness Balochistan Issue Date', format='%Y-%m-%d', validators=[Optional()])
+    fitness_expiry_balochistan = DateField('Fitness Balochistan Expiry', format='%Y-%m-%d', validators=[Optional()])
 
 # --------------------- Helper functions ---------------------
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -6967,6 +7236,88 @@ def wheeler_delete(wheeler_id):
         db.session.rollback()
         flash(f"Cannot delete '{wh.name}' - it's still assigned to a vehicle.")
     return redirect(url_for('vehicle_type_config'))
+
+# Tyre Management (pick a vehicle via search, then manage its tyres)
+@app.route('/vehicles/tyres')
+@login_required
+def vehicle_tyres_select():
+    vehicles = Vehicle.query.order_by(Vehicle.vehicle_number).all()
+    return render_template('vehicle_tyres_select.html', vehicles=vehicles)
+
+@app.route('/vehicles/<int:vehicle_id>/tyres', methods=['GET','POST'])
+@login_required
+def vehicle_tyres(vehicle_id):
+    veh = Vehicle.query.get_or_404(vehicle_id)
+    form = VehicleTyreForm(request.form)
+    if request.method == 'POST' and form.validate():
+        number = (form.tyre_number.data or '').strip().upper()
+        if VehicleTyre.query.filter_by(vehicle_id=veh.id, tyre_number=number).first():
+            flash(f"Tyre '{number}' is already recorded for this vehicle.")
+        else:
+            tyre = VehicleTyre(
+                vehicle_id=veh.id,
+                make=(form.make.data or '').strip().upper(),
+                tyre_number=number,
+                installed_date=form.installed_date.data,
+                installed_km=form.installed_km.data,
+                price=form.price.data,
+            )
+            db.session.add(tyre)
+            db.session.commit()
+            flash('Tyre added')
+        return redirect(url_for('vehicle_tyres', vehicle_id=veh.id))
+    tyres = VehicleTyre.query.filter_by(vehicle_id=veh.id).order_by(VehicleTyre.id.desc()).all()
+    return render_template('vehicle_tyres.html', vehicle=veh, form=form, tyres=tyres)
+
+@app.route('/vehicles/<int:vehicle_id>/tyres/<int:tyre_id>/edit', methods=['POST'])
+@login_required
+def vehicle_tyre_edit(vehicle_id, tyre_id):
+    veh = Vehicle.query.get_or_404(vehicle_id)
+    tyre = VehicleTyre.query.filter_by(id=tyre_id, vehicle_id=veh.id).first_or_404()
+    form = VehicleTyreForm(request.form)
+    if form.validate():
+        number = (form.tyre_number.data or '').strip().upper()
+        dup = VehicleTyre.query.filter(VehicleTyre.vehicle_id == veh.id, VehicleTyre.tyre_number == number, VehicleTyre.id != tyre.id).first()
+        if dup:
+            flash(f"Tyre '{number}' is already recorded for this vehicle.")
+        else:
+            tyre.make = (form.make.data or '').strip().upper()
+            tyre.tyre_number = number
+            tyre.installed_date = form.installed_date.data
+            tyre.installed_km = form.installed_km.data
+            tyre.price = form.price.data
+            db.session.commit()
+            flash('Tyre updated')
+    return redirect(url_for('vehicle_tyres', vehicle_id=veh.id))
+
+@app.route('/vehicles/<int:vehicle_id>/tyres/<int:tyre_id>/delete', methods=['POST'])
+@login_required
+def vehicle_tyre_delete(vehicle_id, tyre_id):
+    veh = Vehicle.query.get_or_404(vehicle_id)
+    tyre = VehicleTyre.query.filter_by(id=tyre_id, vehicle_id=veh.id).first_or_404()
+    db.session.delete(tyre)
+    db.session.commit()
+    flash('Tyre deleted')
+    return redirect(url_for('vehicle_tyres', vehicle_id=veh.id))
+
+# Permits & Compliance (pick a vehicle via search, then edit its compliance dates)
+@app.route('/vehicles/permits')
+@login_required
+def vehicle_permits_select():
+    vehicles = Vehicle.query.order_by(Vehicle.vehicle_number).all()
+    return render_template('vehicle_permits_select.html', vehicles=vehicles)
+
+@app.route('/vehicles/<int:vehicle_id>/permits', methods=['GET','POST'])
+@login_required
+def vehicle_permits(vehicle_id):
+    veh = Vehicle.query.get_or_404(vehicle_id)
+    form = VehiclePermitsForm(request.form, obj=veh)
+    if request.method == 'POST' and form.validate():
+        form.populate_obj(veh)
+        db.session.commit()
+        flash('Permits & Compliance updated')
+        return redirect(url_for('vehicle_permits', vehicle_id=veh.id))
+    return render_template('vehicle_permits.html', vehicle=veh, form=form)
 
 # Clients
 @app.route('/clients')
