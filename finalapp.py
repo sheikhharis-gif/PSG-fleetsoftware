@@ -157,6 +157,56 @@ BASE_TEMPLATE = '''
         .footer-text { color: var(--text-muted); font-size: 0.85rem; }
         .origins-brand { color: var(--accent-dark); font-weight: 700; letter-spacing: 0.5px; text-decoration: none; }
         @media (max-width: 991px) { .app-navbar .dropdown-menu { box-shadow: none; border: none; padding-left: 0.75rem; } .search-box { margin: 0.75rem 0; width: 100%; } .search-box input { width: 100%; } }
+
+        /* ---- Shared design-system color utilities (used across dashboard/list pages but never defined -
+               caused invisible text wherever a component like .badge sets its own default text color) ---- */
+        .text-slate-900 { color: #0f172a !important; }
+        .text-slate-800 { color: #1e293b !important; }
+        .text-slate-700 { color: #334155 !important; }
+        .text-slate-600 { color: #475569 !important; }
+        .text-slate-500 { color: #64748b !important; }
+        .text-slate-400 { color: #94a3b8 !important; }
+        .text-slate-300 { color: #cbd5e1 !important; }
+        .bg-slate-100 { background-color: #f1f5f9 !important; }
+        .bg-slate-900 { background-color: #0f172a !important; }
+
+        .text-indigo-900 { color: #0c4a6e !important; }
+        .text-indigo-700 { color: #0284c7 !important; }
+        .text-indigo-600 { color: #0ea5e9 !important; }
+        .text-indigo-500 { color: #38bdf8 !important; }
+        .text-indigo-400 { color: #7dd3fc !important; }
+        .text-indigo-300 { color: rgba(255,255,255,0.65) !important; }
+        .text-indigo-200 { color: rgba(255,255,255,0.75) !important; }
+        .bg-indigo-700, .bg-indigo-dark { background-color: #0284c7 !important; }
+        .bg-indigo-600 { background-color: #0ea5e9 !important; }
+        .bg-indigo-soft { background-color: #f0f9ff !important; }
+        .border-indigo-100 { border-color: #e0f2fe !important; }
+
+        .text-teal-900 { color: #134e4a !important; }
+        .text-teal-700, .text-teal-dark { color: #0f766e !important; }
+        .text-teal-600 { color: #0d9488 !important; }
+        .bg-teal-50, .bg-teal-soft, .bg-teal-light { background-color: #f0fdfa !important; }
+        .border-teal-100 { border-color: #ccfbf1 !important; }
+
+        .text-rose-900 { color: #881337 !important; }
+        .text-rose-700 { color: #be123c !important; }
+        .text-rose-600 { color: #e11d48 !important; }
+        .text-rose-500 { color: #f43f5e !important; }
+        .text-rose-400 { color: #fb7185 !important; }
+        .bg-rose-500 { background-color: #f43f5e !important; }
+        .bg-rose-50 { background-color: #fff1f2 !important; }
+        .alert-rose { background-color: #fff1f2 !important; border-color: #fecdd3 !important; }
+
+        .text-emerald-700 { color: #047857 !important; }
+        .text-emerald-600 { color: #059669 !important; }
+        .bg-emerald-600 { background-color: #059669 !important; }
+        .bg-emerald-50 { background-color: #ecfdf5 !important; }
+
+        .text-amber-900 { color: #78350f !important; }
+        .text-amber-700 { color: #b45309 !important; }
+        .text-amber-600 { color: #d97706 !important; }
+        .bg-amber-50 { background-color: #fffbeb !important; }
+        .border-amber-100 { border-color: #fef3c7 !important; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
