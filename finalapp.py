@@ -7641,7 +7641,8 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     return round(R * c, 2)
 
 def fetch_and_sync_ontrack_data():
-    ONTRACK_API_URL = "http://ontrack.sjsolutionz.com:8080/api/api.php?api=user&ver=1.0&key=66717573FE2D8BB6CB5AAACE3E0EA0B3&cmd=OBJECT_GET_LOCATIONS,*"
+    ONTRACK_API_KEY = os.environ.get('ONTRACK_API_KEY', '')
+    ONTRACK_API_URL = f"http://ontrack.sjsolutionz.com:8080/api/api.php?api=user&ver=1.0&key={ONTRACK_API_KEY}&cmd=OBJECT_GET_LOCATIONS,*"
     try:
         resp = requests.get(ONTRACK_API_URL, timeout=60)
         data = resp.json()
