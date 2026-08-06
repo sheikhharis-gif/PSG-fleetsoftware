@@ -6925,6 +6925,9 @@ DASHBOARD_TEMPLATE = '''
     }
 
     .bg-white-20 { background: rgba(255,255,255,0.2); }
+    .bg-indigo-700 { background: var(--indigo-700); }
+    .text-indigo-200 { color: rgba(255,255,255,0.75); }
+    .text-indigo-300 { color: rgba(255,255,255,0.65); }
 
     /* MAINTENANCE TABLE */
     .enterprise-table thead th {
