@@ -204,11 +204,13 @@ BASE_TEMPLATE = '''
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['cargo_list','cargo_create','cargo_update_status'] else '' }}" href="{{ url_for('cargo_list') }}"><i class="bi bi-archive me-2 text-primary"></i>Cargo Manifest</a></li>
                 </ul>
                 {% endcall %}
-                {% call navgroup('Partners', 'bi-building', ['client_list','client_add','client_edit','client_delete','client_rates','vendor_list','vendor_add','vendor_edit','vendor_delete','vendor_type_list','vendor_type_add']) %}
+                {% call navgroup('Partners', 'bi-building', ['client_list','client_add','client_edit','client_delete','client_rates_select','client_rates','client_rate_edit','client_rate_delete','client_dedicated_rate_add','client_dedicated_rate_edit','client_dedicated_rate_delete','client_type_config','client_type_add','client_type_edit','client_type_delete','vendor_list','vendor_add','vendor_edit','vendor_delete','vendor_type_list','vendor_type_add','vendor_type_edit','vendor_type_delete']) %}
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['client_list','client_add','client_edit','client_delete','client_rates'] else '' }}" href="{{ url_for('client_list') }}"><i class="bi bi-building me-2 text-primary"></i>Clients</a></li>
+                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['client_list','client_add','client_edit','client_delete'] else '' }}" href="{{ url_for('client_list') }}"><i class="bi bi-building me-2 text-primary"></i>Clients</a></li>
+                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['client_type_config','client_type_add','client_type_edit','client_type_delete'] else '' }}" href="{{ url_for('client_type_config') }}"><i class="bi bi-tags me-2 text-primary"></i>Client Types</a></li>
+                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['client_rates_select','client_rates','client_rate_edit','client_rate_delete','client_dedicated_rate_add','client_dedicated_rate_edit','client_dedicated_rate_delete'] else '' }}" href="{{ url_for('client_rates_select') }}"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Client Rates</a></li>
                     <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vendor_list','vendor_add','vendor_edit','vendor_delete'] else '' }}" href="{{ url_for('vendor_list') }}"><i class="bi bi-shop me-2 text-primary"></i>Vendors</a></li>
-                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vendor_type_list','vendor_type_add'] else '' }}" href="{{ url_for('vendor_type_list') }}"><i class="bi bi-tags me-2 text-primary"></i>Vendor Types</a></li>
+                    <li><a class="dropdown-item {{ 'active' if request.endpoint in ['vendor_type_list','vendor_type_add','vendor_type_edit','vendor_type_delete'] else '' }}" href="{{ url_for('vendor_type_list') }}"><i class="bi bi-tags me-2 text-primary"></i>Vendor Types</a></li>
                 </ul>
                 {% endcall %}
                 {% call navgroup('Admin', 'bi-gear', ['driver_list','driver_add','driver_edit','driver_delete','locations_master','expense_list','expense_delete','expense_sheet','expense_edit']) %}
@@ -1290,8 +1292,8 @@ CLIENT_LIST_TEMPLATE = '''
                         </td>
                         <td>
                             <div class="contact-info">
-                                <span class="d-block fw-semibold text-slate-700">{{ c.poc }}</span>
-                                <span class="text-slate-400 extra-small">POINT OF CONTACT</span>
+                                <span class="d-block fw-semibold text-slate-700">{{ c.poc1_name or '--' }}</span>
+                                <span class="text-slate-400 extra-small">{{ c.poc1_phone or 'POINT OF CONTACT' }}</span>
                             </div>
                         </td>
                         <td>
@@ -1493,20 +1495,71 @@ CLIENT_FORM_TEMPLATE = '''
                     </div>
                     <div class="card-body p-4 pt-2">
                         <div class="row g-3">
-                            <div class="col-md-12">
+                            <div class="col-md-8">
                                 <label class="corp-label">Registered Company Name</label>
                                 {{ form.name(class="form-control corp-input", placeholder="Legal Name for Invoicing") }}
                             </div>
-                            <div class="col-md-6">
-                                <label class="corp-label">Primary Liaison (POC)</label>
-                                {{ form.poc(class="form-control corp-input", placeholder="Full Name") }}
+                            <div class="col-md-4">
+                                <label class="corp-label">Client Type</label>
+                                {{ form.client_type(class="form-select corp-input") }}
+                                <a href="{{ url_for('client_type_config') }}" class="small text-primary d-inline-block mt-1">+ Add New Client Type</a>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label class="corp-label">Point of Contact 1</label>
+                                {{ form.poc1_name(class="form-control corp-input", placeholder="Full Name") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Phone / Mobile Number</label>
+                                {{ form.poc1_phone(class="form-control corp-input", placeholder="03XX-XXXXXXX") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Email</label>
+                                {{ form.poc1_email(class="form-control corp-input", placeholder="name@company.com") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Point of Contact 2</label>
+                                {{ form.poc2_name(class="form-control corp-input", placeholder="Full Name") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Phone / Mobile Number</label>
+                                {{ form.poc2_phone(class="form-control corp-input", placeholder="03XX-XXXXXXX") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Email</label>
+                                {{ form.poc2_email(class="form-control corp-input", placeholder="name@company.com") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: FISCAL & BILLING -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h6 class="fw-bold text-uppercase ls-1 text-primary mb-0" style="font-size: 0.75rem;">
+                            <i class="bi bi-file-earmark-ruled me-2"></i>Fiscal & Billing
+                        </h6>
+                    </div>
+                    <div class="card-body p-4 pt-2">
+                        <div class="row g-3">
+                            <div class="col-md-3">
                                 <label class="corp-label">National Tax Number (NTN)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 py-2"><i class="bi bi-file-earmark-ruled text-muted"></i></span>
-                                    {{ form.ntn(class="form-control corp-input border-start-0", placeholder="0000000-0") }}
-                                </div>
+                                {{ form.ntn(class="form-control corp-input", placeholder="0000000-0") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="corp-label">Sales Tax Number (STN)</label>
+                                {{ form.stn(class="form-control corp-input") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="corp-label">Terms of Service</label>
+                                {{ form.term_of_service(class="form-control corp-input") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="corp-label">Billing Period</label>
+                                {{ form.billing_period(class="form-control corp-input") }}
+                            </div>
+                            <div class="col-md-12">
+                                <label class="corp-label">Billing Company</label>
+                                {{ form.billing_company(class="form-control corp-input") }}
                             </div>
                         </div>
                     </div>
@@ -1544,7 +1597,7 @@ CLIENT_FORM_TEMPLATE = '''
                         <p class="small mb-0 opacity-75">Switch to 'Active' to enable trip assignments and automated invoicing for this partner.</p>
                         
                         <!-- Decorative element -->
-                        <i class="bi bi-person-check position-absolute end-0 bottom-0 mb-n3 me-n2 opacity-25 text-white" style="font-size: 6rem;"></i>
+                        <i class="bi bi-person-check position-absolute end-0 bottom-0 mb-n3 me-n2 opacity-25 text-white" style="font-size: 6rem; pointer-events: none;"></i>
                     </div>
                 </div>
 
@@ -1640,12 +1693,416 @@ CLIENT_FORM_TEMPLATE = '''
 {% endblock %}
 '''
 
+RATE_PICKER_STYLE = '''
+<style>
+    :root { --indigo-600: #0ea5e9; --indigo-dark: #0c4a6e; --slate-900: #0f172a; --slate-800: #1e293b; --slate-400: #94a3b8; }
+    .fw-extrabold { font-weight: 800; }
+    .btn-indigo { background-color: var(--indigo-600); color: white; border: none; border-radius: 8px; }
+    .btn-indigo:hover { background-color: var(--indigo-dark); color: white; }
+    .corp-input { padding: 0.55rem 0.8rem; border: 2px solid #f1f5f9; border-radius: 10px; font-size: 0.85rem; background-color: #f8fafc; }
+    .corp-input:focus { background-color: #ffffff; border-color: var(--indigo-600); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.08); outline: none; }
+    .enterprise-table thead th { background-color: #f8fafc; color: var(--slate-400); font-size: 0.62rem; font-weight: 700; letter-spacing: 1px; padding: 0.7rem 0.6rem; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
+    .enterprise-table tbody tr { transition: all 0.2s; border-bottom: 1px solid #f1f5f9; }
+    .enterprise-table tbody tr:hover { background-color: #f8fafc; }
+    .enterprise-table td { font-size: 0.82rem; white-space: nowrap; }
+    .picker-list-group .list-group-item { border: 1px solid #f1f5f9; border-radius: 10px !important; margin-bottom: 6px; transition: all 0.15s; }
+    .picker-list-group .list-group-item:hover { background-color: #f0f9ff; border-color: var(--indigo-600); transform: translateX(2px); }
+    .rsr-col { background-color: #f1f5f9 !important; }
+    .utc-col { background-color: #e0f2fe !important; font-weight: 700; }
+    .mode-tab { border: 2px solid #e2e8f0; background: white; color: #64748b; font-weight: 700; padding: 0.5rem 1.5rem; border-radius: 10px; }
+    .mode-tab.active-tab { border-color: var(--indigo-600); background-color: var(--indigo-600); color: white; }
+    .breadcrumb-item + .breadcrumb-item::before { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%23cbd5e1'/%3E%3C/svg%3E");}
+</style>
+'''
+
+CLIENT_RATES_SELECT_TEMPLATE = '''
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('client_list') }}" class="text-decoration-none text-slate-400">Clients</a></li>
+            <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Client Rates</li>
+        </ol>
+    </nav>
+    <h3 class="fw-extrabold text-slate-900 mb-4"><i class="bi bi-graph-up-arrow text-indigo-600 me-2"></i>Client Rates</h3>
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <label class="fw-bold text-slate-800 mb-2">Select Client</label>
+                <input type="text" id="clientSearchInput" class="form-control corp-input mb-3" placeholder="Type client name..." autofocus>
+                <div id="noClientResult" class="alert alert-light border text-center small d-none">No client matches your search.</div>
+                <div class="list-group picker-list-group" id="clientResultList" style="max-height: 420px; overflow-y: auto;">
+                    {% for c in clients %}
+                    <a href="{{ url_for('client_rates', client_id=c.id) }}" class="list-group-item list-group-item-action client-result-item" data-name="{{ c.name }}">
+                        <span class="fw-bold">{{ c.name }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+''' + RATE_PICKER_STYLE + '''
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('clientSearchInput');
+    const items = document.querySelectorAll('.client-result-item');
+    const noResult = document.getElementById('noClientResult');
+    input.addEventListener('input', function () {
+        const q = input.value.trim().toUpperCase();
+        let visible = 0;
+        items.forEach(function (item) {
+            const match = (item.dataset.name || '').toUpperCase().indexOf(q) > -1;
+            item.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        noResult.classList.toggle('d-none', !(q.length && visible === 0));
+    });
+});
+</script>
+{% endblock %}
+'''
+
 CLIENT_RATES_TEMPLATE = '''
 {% extends "base.html" %}
 {% block content %}
-<h4>Rates for {{ client.name }}</h4>
-<form method="post"><div class="card p-3 mb-3">{{ form.route.label }} {{ form.route(class="form-select") }}<br>{{ form.rate.label }} {{ form.rate(class="form-control") }}<br>{{ form.fuel_price.label }} {{ form.fuel_price(class="form-control") }}<br>{{ form.effective_date.label }} {{ form.effective_date(class="form-control",type="date") }}<br><button type="submit" class="btn btn-primary">Add Rate</button></div></form>
-<table class="table"><thead><tr><th>Route</th><th>Rate</th><th>Fuel Price</th><th>Effective Date</th></tr></thead><tbody>{% for r in rates %}<tr><td>{{ r.route.route_code }}</td><td>{{ r.rate }}</td><td>{{ r.fuel_price }}</td><td>{{ r.effective_date }}</td></tr>{% endfor %}</tbody></table>
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('client_list') }}" class="text-decoration-none text-slate-400">Clients</a></li>
+                    <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Rates</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-slate-900 mb-0"><i class="bi bi-graph-up-arrow text-indigo-600 me-2"></i>{{ client.name }}</h3>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('client_rates_select') }}" class="btn btn-light border fw-bold"><i class="bi bi-arrow-left-right me-1"></i>Change Client</a>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <button type="button" id="tripTabBtn" class="mode-tab active-tab">1. Trip</button>
+        <button type="button" id="dedicatedTabBtn" class="mode-tab">2. Dedicated</button>
+    </div>
+
+    <div id="tripPane">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h6 class="fw-bold text-slate-900 mb-0"><i class="bi bi-plus-circle text-indigo-600 me-2"></i>Add Rate Revision</h6>
+            </div>
+            <div class="card-body px-4 pb-4 pt-0">
+                <form method="post" class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">ROUTE</label>
+                        {{ form.route(class="form-select corp-input", id="id_route") }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">CURRENT FUEL PRICE</label>
+                        {{ form.current_fuel_price(class="form-control corp-input", id="id_current_fuel_price", step="0.01") }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">CURRENT RATE</label>
+                        {{ form.current_rate(class="form-control corp-input", id="id_current_rate", step="0.01") }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">EFFECTIVE %</label>
+                        {{ form.effective_percent(class="form-control corp-input", id="id_effective_percent", step="0.01") }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">UPDATED FUEL PRICE</label>
+                        {{ form.updated_fuel_price(class="form-control corp-input", step="0.01") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">DATE</label>
+                        {{ form.effective_date(class="form-control corp-input", type="date") }}
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-indigo fw-bold w-100"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="table-responsive" style="max-height: 460px;">
+                <table class="table table-hover align-middle mb-0 enterprise-table">
+                    <thead style="position: sticky; top: 0; z-index: 1;">
+                        <tr>
+                            <th>ROUTE</th><th>CURRENT FUEL PRICE</th><th>CURRENT RATE</th><th>EFFECTIVE %</th>
+                            <th class="rsr-col">RATE SUBJECT TO REVISION</th><th>UPDATED FUEL PRICE</th>
+                            <th>FUEL PRICE CHANGE %</th><th>RATE ADJUSTMENT</th><th class="utc-col">UPDATED TRIP COST</th>
+                            <th>EFFECTIVE DATE</th><th class="text-end pe-2">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in rates %}
+                        <tr>
+                            <td class="fw-bold">{{ r.route.route_code or (r.route.origin.name ~ '->' ~ r.route.destination.name) }}</td>
+                            <td>{{ '%.2f'|format(r.current_fuel_price) }}</td>
+                            <td>{{ '%.2f'|format(r.current_rate) }}</td>
+                            <td>{{ '%.2f'|format(r.effective_percent) }}%</td>
+                            <td class="rsr-col">{{ '%.2f'|format(r.rate_subject_to_revision) }}</td>
+                            <td>{{ '%.2f'|format(r.updated_fuel_price) }}</td>
+                            <td class="{{ 'text-success' if r.fuel_price_change_percent >= 0 else 'text-danger' }}">{{ '%.2f'|format(r.fuel_price_change_percent) }}%</td>
+                            <td class="{{ 'text-success' if r.rate_adjustment >= 0 else 'text-danger' }}">{{ '%.2f'|format(r.rate_adjustment) }}</td>
+                            <td class="utc-col">{{ '%.2f'|format(r.updated_trip_cost) }}</td>
+                            <td>{{ r.effective_date }}</td>
+                            <td class="text-end pe-2">
+                                <button type="button" class="btn btn-sm btn-light text-warning border-0 edit-rate-btn"
+                                    data-edit-url="{{ url_for('client_rate_edit', client_id=client.id, rate_id=r.id) }}"
+                                    data-route="{{ r.route_id }}" data-current-fuel-price="{{ r.current_fuel_price }}"
+                                    data-current-rate="{{ r.current_rate }}" data-effective-percent="{{ r.effective_percent }}"
+                                    data-updated-fuel-price="{{ r.updated_fuel_price }}" data-effective-date="{{ r.effective_date }}"
+                                    title="Edit"><i class="bi bi-pencil-square"></i></button>
+                                <form method="post" action="{{ url_for('client_rate_delete', client_id=client.id, rate_id=r.id) }}" class="d-inline" onsubmit="return confirm('Delete this rate revision?')">
+                                    <button type="submit" class="btn btn-sm btn-light text-danger border-0" title="Delete"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="11" class="text-center py-4 text-slate-400">No rate revisions recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dedicatedPane" style="display:none;">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h6 class="fw-bold text-slate-900 mb-0"><i class="bi bi-plus-circle text-indigo-600 me-2"></i>Add Dedicated Rate</h6>
+            </div>
+            <div class="card-body px-4 pb-4 pt-0">
+                <form method="post" action="{{ url_for('client_dedicated_rate_add', client_id=client.id) }}" class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">VEHICLE</label>
+                        {{ dedicated_form.vehicle(class="form-select corp-input") }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">FIXED COST</label>
+                        {{ dedicated_form.fixed_cost(class="form-control corp-input", step="0.01") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">MONTH</label>
+                        {{ dedicated_form.month(class="form-control corp-input", type="date") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">FUEL AVG</label>
+                        {{ dedicated_form.fuel_avg(class="form-control corp-input", step="0.01") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">FUEL PRICE</label>
+                        {{ dedicated_form.fuel_price(class="form-control corp-input", step="0.01") }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-slate-400">ROUTE</label>
+                        {{ dedicated_form.route(class="form-select corp-input", id="id_ded_route") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">DIST. SOURCE</label>
+                        {{ dedicated_form.distance_mode(class="form-select corp-input", id="id_ded_distance_mode") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">DIST (KM)</label>
+                        {{ dedicated_form.distance_km(class="form-control corp-input", id="id_ded_distance_km", step="0.01") }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="small fw-bold text-slate-400">DATE</label>
+                        {{ dedicated_form.effective_date(class="form-control corp-input", type="date") }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-indigo fw-bold"><i class="bi bi-plus-lg me-1"></i>Add Dedicated Rate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="table-responsive" style="max-height: 460px;">
+                <table class="table table-hover align-middle mb-0 enterprise-table">
+                    <thead style="position: sticky; top: 0; z-index: 1;">
+                        <tr>
+                            <th>VEHICLE</th><th>FIXED COST</th><th>MONTH</th><th>FUEL AVG</th><th>FUEL PRICE</th>
+                            <th class="rsr-col">VARIABLE COST</th><th>ROUTE</th><th>DIST. SOURCE</th><th>DISTANCE (KM)</th>
+                            <th>EFFECTIVE DATE</th><th class="text-end pe-2">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in dedicated_rates %}
+                        <tr>
+                            <td class="fw-bold">{{ d.vehicle.vehicle_number }}</td>
+                            <td>{{ '%.2f'|format(d.fixed_cost) }}</td>
+                            <td>{{ d.month.strftime('%b-%Y') if d.month else '' }}</td>
+                            <td>{{ '%.2f'|format(d.fuel_avg) }}</td>
+                            <td>{{ '%.2f'|format(d.fuel_price) }}</td>
+                            <td class="rsr-col">{{ '%.2f'|format(d.variable_cost) }}</td>
+                            <td>{{ d.route.route_code or (d.route.origin.name ~ '->' ~ d.route.destination.name) }}</td>
+                            <td>{{ d.distance_mode }}</td>
+                            <td>{{ '%.2f'|format(d.distance_km) if d.distance_km is not none else '--' }}</td>
+                            <td>{{ d.effective_date }}</td>
+                            <td class="text-end pe-2">
+                                <button type="button" class="btn btn-sm btn-light text-warning border-0 edit-ded-btn"
+                                    data-edit-url="{{ url_for('client_dedicated_rate_edit', client_id=client.id, rate_id=d.id) }}"
+                                    data-vehicle="{{ d.vehicle_id }}" data-fixed-cost="{{ d.fixed_cost }}" data-month="{{ d.month }}"
+                                    data-fuel-avg="{{ d.fuel_avg }}" data-fuel-price="{{ d.fuel_price }}" data-route="{{ d.route_id }}"
+                                    data-distance-mode="{{ d.distance_mode }}" data-distance-km="{{ d.distance_km }}" data-effective-date="{{ d.effective_date }}"
+                                    title="Edit"><i class="bi bi-pencil-square"></i></button>
+                                <form method="post" action="{{ url_for('client_dedicated_rate_delete', client_id=client.id, rate_id=d.id) }}" class="d-inline" onsubmit="return confirm('Delete this dedicated rate?')">
+                                    <button type="submit" class="btn btn-sm btn-light text-danger border-0" title="Delete"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="11" class="text-center py-4 text-slate-400">No dedicated rates recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Trip Rate Modal -->
+<div class="modal fade" id="rateEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4">
+            <form method="post" id="rateEditForm" action="">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold">Edit Rate Revision</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body row g-2">
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">ROUTE</label><select name="route" id="rateEditRoute" class="form-select corp-input">{% for rid, rlabel in form.route.choices %}<option value="{{ rid }}">{{ rlabel }}</option>{% endfor %}</select></div>
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">EFFECTIVE DATE</label><input type="date" name="effective_date" id="rateEditDate" class="form-control corp-input"></div>
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">CURRENT FUEL PRICE</label><input type="number" step="0.01" name="current_fuel_price" id="rateEditCurrentFuelPrice" class="form-control corp-input"></div>
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">CURRENT RATE</label><input type="number" step="0.01" name="current_rate" id="rateEditCurrentRate" class="form-control corp-input"></div>
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">EFFECTIVE %</label><input type="number" step="0.01" name="effective_percent" id="rateEditEffectivePercent" class="form-control corp-input"></div>
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">UPDATED FUEL PRICE</label><input type="number" step="0.01" name="updated_fuel_price" id="rateEditUpdatedFuelPrice" class="form-control corp-input"></div>
+                </div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-indigo fw-bold">Save</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Dedicated Rate Modal -->
+<div class="modal fade" id="dedicatedEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4">
+            <form method="post" id="dedicatedEditForm" action="">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold">Edit Dedicated Rate</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body row g-2">
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">VEHICLE</label><select name="vehicle" id="dedEditVehicle" class="form-select corp-input">{% for vid, vlabel in dedicated_form.vehicle.choices %}<option value="{{ vid }}">{{ vlabel }}</option>{% endfor %}</select></div>
+                    <div class="col-md-6"><label class="small fw-bold text-slate-400">ROUTE</label><select name="route" id="dedEditRoute" class="form-select corp-input">{% for rid, rlabel in dedicated_form.route.choices %}<option value="{{ rid }}">{{ rlabel }}</option>{% endfor %}</select></div>
+                    <div class="col-md-4"><label class="small fw-bold text-slate-400">FIXED COST</label><input type="number" step="0.01" name="fixed_cost" id="dedEditFixedCost" class="form-control corp-input"></div>
+                    <div class="col-md-4"><label class="small fw-bold text-slate-400">MONTH</label><input type="date" name="month" id="dedEditMonth" class="form-control corp-input"></div>
+                    <div class="col-md-4"><label class="small fw-bold text-slate-400">EFFECTIVE DATE</label><input type="date" name="effective_date" id="dedEditEffectiveDate" class="form-control corp-input"></div>
+                    <div class="col-md-4"><label class="small fw-bold text-slate-400">FUEL AVG</label><input type="number" step="0.01" name="fuel_avg" id="dedEditFuelAvg" class="form-control corp-input"></div>
+                    <div class="col-md-4"><label class="small fw-bold text-slate-400">FUEL PRICE</label><input type="number" step="0.01" name="fuel_price" id="dedEditFuelPrice" class="form-control corp-input"></div>
+                    <div class="col-md-4">
+                        <label class="small fw-bold text-slate-400">DIST. SOURCE</label>
+                        <select name="distance_mode" id="dedEditDistanceMode" class="form-select corp-input">
+                            {% for val, label in [('STANDARD','Standard (from Route)'),('ACTUAL','Actual (from Job Orders)'),('TRACKER','Tracker (manual)')] %}
+                            <option value="{{ val }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4"><label class="small fw-bold text-slate-400">DISTANCE (KM)</label><input type="number" step="0.01" name="distance_km" id="dedEditDistanceKm" class="form-control corp-input"></div>
+                </div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-indigo fw-bold">Save</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+''' + RATE_PICKER_STYLE + '''
+<script>
+const lastByRoute = {{ last_by_route_json|safe }};
+const routesDistance = {{ routes_distance_json|safe }};
+
+function syncCurrentFields() {
+    const routeId = document.getElementById('id_route').value;
+    const feInput = document.getElementById('id_current_fuel_price');
+    const rateInput = document.getElementById('id_current_rate');
+    const pctInput = document.getElementById('id_effective_percent');
+    const prev = lastByRoute[routeId];
+    if (prev) {
+        feInput.value = prev.fuel_price;
+        rateInput.value = prev.trip_cost;
+        feInput.readOnly = true; rateInput.readOnly = true;
+        feInput.classList.add('bg-light'); rateInput.classList.add('bg-light');
+        if (!pctInput.value) pctInput.value = prev.effective_percent;
+    } else {
+        feInput.value = ''; rateInput.value = '';
+        feInput.readOnly = false; rateInput.readOnly = false;
+        feInput.classList.remove('bg-light'); rateInput.classList.remove('bg-light');
+    }
+}
+
+function syncDedicatedDistance() {
+    const mode = document.getElementById('id_ded_distance_mode').value;
+    const distInput = document.getElementById('id_ded_distance_km');
+    if (mode === 'TRACKER') {
+        distInput.readOnly = false;
+        distInput.classList.remove('bg-light');
+    } else {
+        const routeId = document.getElementById('id_ded_route').value;
+        distInput.value = routesDistance[routeId] || '';
+        distInput.readOnly = true;
+        distInput.classList.add('bg-light');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const tripBtn = document.getElementById('tripTabBtn');
+    const dedBtn = document.getElementById('dedicatedTabBtn');
+    const tripPane = document.getElementById('tripPane');
+    const dedPane = document.getElementById('dedicatedPane');
+    function showTrip() { tripPane.style.display = ''; dedPane.style.display = 'none'; tripBtn.classList.add('active-tab'); dedBtn.classList.remove('active-tab'); }
+    function showDedicated() { tripPane.style.display = 'none'; dedPane.style.display = ''; dedBtn.classList.add('active-tab'); tripBtn.classList.remove('active-tab'); }
+    tripBtn.addEventListener('click', showTrip);
+    dedBtn.addEventListener('click', showDedicated);
+    if (new URLSearchParams(window.location.search).get('mode') === 'dedicated') { showDedicated(); }
+
+    document.getElementById('id_route').addEventListener('change', syncCurrentFields);
+    syncCurrentFields();
+
+    const dedRoute = document.getElementById('id_ded_route');
+    const dedMode = document.getElementById('id_ded_distance_mode');
+    if (dedRoute) { dedRoute.addEventListener('change', syncDedicatedDistance); dedMode.addEventListener('change', syncDedicatedDistance); syncDedicatedDistance(); }
+
+    const rateModal = new bootstrap.Modal(document.getElementById('rateEditModal'));
+    document.querySelectorAll('.edit-rate-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('rateEditForm').action = this.dataset.editUrl;
+            document.getElementById('rateEditRoute').value = this.dataset.route;
+            document.getElementById('rateEditDate').value = this.dataset.effectiveDate;
+            document.getElementById('rateEditCurrentFuelPrice').value = this.dataset.currentFuelPrice;
+            document.getElementById('rateEditCurrentRate').value = this.dataset.currentRate;
+            document.getElementById('rateEditEffectivePercent').value = this.dataset.effectivePercent;
+            document.getElementById('rateEditUpdatedFuelPrice').value = this.dataset.updatedFuelPrice;
+            rateModal.show();
+        });
+    });
+
+    const dedModal = new bootstrap.Modal(document.getElementById('dedicatedEditModal'));
+    document.querySelectorAll('.edit-ded-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('dedicatedEditForm').action = this.dataset.editUrl;
+            document.getElementById('dedEditVehicle').value = this.dataset.vehicle;
+            document.getElementById('dedEditRoute').value = this.dataset.route;
+            document.getElementById('dedEditFixedCost').value = this.dataset.fixedCost;
+            document.getElementById('dedEditMonth').value = this.dataset.month;
+            document.getElementById('dedEditEffectiveDate').value = this.dataset.effectiveDate;
+            document.getElementById('dedEditFuelAvg').value = this.dataset.fuelAvg;
+            document.getElementById('dedEditFuelPrice').value = this.dataset.fuelPrice;
+            document.getElementById('dedEditDistanceMode').value = this.dataset.distanceMode;
+            document.getElementById('dedEditDistanceKm').value = this.dataset.distanceKm;
+            dedModal.show();
+        });
+    });
+});
+</script>
 {% endblock %}
 '''
 
@@ -1712,12 +2169,12 @@ VENDOR_LIST_TEMPLATE = '''
                         </td>
                         <td>
                             <div class="contact-info">
-                                <div class="text-slate-700 fw-medium small"><i class="bi bi-telephone me-2 text-indigo-400"></i>{{ v.phone }}</div>
+                                <div class="text-slate-700 fw-medium small"><i class="bi bi-telephone me-2 text-indigo-400"></i>{{ v.poc1_phone or '--' }}</div>
                             </div>
                         </td>
                         <td>
                             <div class="poc-label">
-                                <span class="d-block fw-semibold text-slate-800">{{ v.poc }}</span>
+                                <span class="d-block fw-semibold text-slate-800">{{ v.poc1_name or '--' }}</span>
                                 <span class="text-slate-400 extra-small">AUTH. REPRESENTATIVE</span>
                             </div>
                         </td>
@@ -1885,17 +2342,31 @@ VENDOR_FORM_TEMPLATE = '''
                             <div class="col-md-4">
                                 <label class="corp-label">Vendor Category</label>
                                 {{ form.type(class="form-select corp-input") }}
+                                <a href="{{ url_for('vendor_type_list') }}" class="small text-indigo-600 d-inline-block mt-1">+ Add New Vendor Type</a>
                             </div>
-                            <div class="col-md-6">
-                                <label class="corp-label">Primary Contact Person (POC)</label>
-                                {{ form.poc(class="form-control corp-input", placeholder="Manager/Owner Name") }}
+                            <div class="col-md-4">
+                                <label class="corp-label">Point of Contact 1</label>
+                                {{ form.poc1_name(class="form-control corp-input", placeholder="Manager/Owner Name") }}
                             </div>
-                            <div class="col-md-6">
-                                <label class="corp-label">Contact Number</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 py-2"><i class="bi bi-telephone text-muted"></i></span>
-                                    {{ form.phone(class="form-control corp-input border-start-0", placeholder="+92 300 0000000") }}
-                                </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Phone / Mobile Number</label>
+                                {{ form.poc1_phone(class="form-control corp-input", placeholder="+92 300 0000000") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Email</label>
+                                {{ form.poc1_email(class="form-control corp-input", placeholder="name@company.com") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Point of Contact 2</label>
+                                {{ form.poc2_name(class="form-control corp-input", placeholder="Manager/Owner Name") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Phone / Mobile Number</label>
+                                {{ form.poc2_phone(class="form-control corp-input", placeholder="+92 300 0000000") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="corp-label">Email</label>
+                                {{ form.poc2_email(class="form-control corp-input", placeholder="name@company.com") }}
                             </div>
                         </div>
                     </div>
@@ -1910,9 +2381,21 @@ VENDOR_FORM_TEMPLATE = '''
                     </div>
                     <div class="card-body p-4 pt-2">
                         <div class="row g-3">
-                            <div class="col-md-12">
+                            <div class="col-md-3">
                                 <label class="corp-label">National Tax Number (NTN)</label>
                                 {{ form.ntn(class="form-control corp-input", placeholder="NTN for Tax Invoices") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="corp-label">Sales Tax Number (STN)</label>
+                                {{ form.stn(class="form-control corp-input") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="corp-label">Terms of Service</label>
+                                {{ form.term_of_service(class="form-control corp-input") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="corp-label">Billing Period</label>
+                                {{ form.billing_period(class="form-control corp-input") }}
                             </div>
                             <div class="col-md-12">
                                 <label class="corp-label">Physical Business Address</label>
@@ -1929,17 +2412,22 @@ VENDOR_FORM_TEMPLATE = '''
                 <!-- VENDOR OVERVIEW CARD -->
                 <div class="card border-0 shadow-sm rounded-4 mb-4 bg-indigo-dark text-white overflow-hidden">
                     <div class="card-body p-4 position-relative z-1">
-                        <h6 class="fw-bold text-uppercase ls-1 mb-4" style="font-size: 0.7rem; opacity: 0.8;">Registry Note</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-uppercase ls-1 mb-0" style="font-size: 0.7rem; opacity: 0.8;">Active Status</h6>
+                            <div class="form-check form-switch">
+                                {{ form.is_active(class="form-check-input", style="width: 3em; height: 1.5em;") }}
+                            </div>
+                        </div>
                         <div class="d-flex align-items-start mb-3">
                             <div class="bg-white bg-opacity-10 p-2 rounded-3 me-3">
                                 <i class="bi bi-shield-check text-white fs-4"></i>
                             </div>
                             <div>
                                 <h6 class="fw-bold mb-1">Active Partner</h6>
-                                <p class="small mb-0 opacity-75">Once registered, this vendor will be available for purchase orders and expense tracking.</p>
+                                <p class="small mb-0 opacity-75">Once registered and active, this vendor will be available for purchase orders and expense tracking.</p>
                             </div>
                         </div>
-                        <i class="bi bi-truck position-absolute end-0 bottom-0 mb-n3 me-n2 opacity-25 text-white" style="font-size: 7rem;"></i>
+                        <i class="bi bi-truck position-absolute end-0 bottom-0 mb-n3 me-n2 opacity-25 text-white" style="font-size: 7rem; pointer-events: none;"></i>
                     </div>
                 </div>
 
@@ -2091,9 +2579,8 @@ VENDOR_TYPE_LIST_TEMPLATE = '''
                                     </div>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light text-slate-400 border-0" title="System Protected">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-light text-warning border-0 edit-vtype-btn" data-id="{{ t.id }}" data-name="{{ t.name }}" title="Edit"><i class="bi bi-pencil-square"></i></button>
+                                    <a href="{{ url_for('vendor_type_delete', type_id=t.id) }}" class="btn btn-sm btn-light text-danger border-0" title="Delete" onclick="return confirm('Delete vendor type {{ t.name }}?')"><i class="bi bi-trash"></i></a>
                                 </td>
                             </tr>
                             {% else %}
@@ -2123,6 +2610,32 @@ VENDOR_TYPE_LIST_TEMPLATE = '''
         </div>
     </div>
 </div>
+
+<!-- Edit Vendor Type Modal -->
+<div class="modal fade" id="vtypeEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <form method="post" id="vtypeEditForm" action="">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold">Edit Vendor Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><input type="text" name="name" id="vtypeEditName" class="form-control corp-input" required></div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-indigo fw-bold">Save</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const vtypeModal = new bootstrap.Modal(document.getElementById('vtypeEditModal'));
+    document.querySelectorAll('.edit-vtype-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('vtypeEditForm').action = '/vendor-types/' + this.dataset.id + '/edit';
+            document.getElementById('vtypeEditName').value = this.dataset.name;
+            vtypeModal.show();
+        });
+    });
+});
+</script>
 
 <style>
     /* ENTERPRISE DESIGN SYSTEM */
@@ -2159,20 +2672,23 @@ VENDOR_TYPE_LIST_TEMPLATE = '''
         border-radius: 50%;
     }
 
-    .btn-indigo { 
-        background-color: var(--indigo-600); 
-        color: white; 
-        border: none; 
-    }
-    
-    .btn-indigo:hover { 
-        background-color: var(--indigo-dark); 
-        color: white; 
+    .btn-indigo {
+        background-color: var(--indigo-600);
+        color: white;
+        border: none;
     }
 
-    .bg-indigo-dark { 
-        background: linear-gradient(135deg, #0284c7 0%, #0c4a6e 100%); 
+    .btn-indigo:hover {
+        background-color: var(--indigo-dark);
+        color: white;
     }
+
+    .bg-indigo-dark {
+        background: linear-gradient(135deg, #0284c7 0%, #0c4a6e 100%);
+    }
+
+    .corp-input { padding: 0.6rem 0.9rem; border: 2px solid #f1f5f9; border-radius: 10px; font-size: 0.9rem; background-color: #f8fafc; }
+    .corp-input:focus { background-color: #ffffff; border-color: var(--indigo-600); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.08); outline: none; }
 
     .breadcrumb-item + .breadcrumb-item::before {
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%23cbd5e1'/%3E%3C/svg%3E");
@@ -2321,6 +2837,112 @@ VENDOR_TYPE_FORM_TEMPLATE = '''
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%23cbd5e1'/%3E%3C/svg%3E");
     }
 </style>
+{% endblock %}
+'''
+
+CLIENT_TYPE_CONFIG_TEMPLATE = '''
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f1f5f9; min-height: 100vh;">
+
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item small text-uppercase fw-bold"><a href="{{ url_for('client_list') }}" class="text-decoration-none text-slate-400">Clients</a></li>
+                    <li class="breadcrumb-item small text-uppercase fw-bold active text-indigo-600" aria-current="page">Client Types</li>
+                </ol>
+            </nav>
+            <h3 class="fw-extrabold text-slate-900 mb-0">
+                <i class="bi bi-tags text-indigo-600 me-2"></i>Client Types
+            </h3>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h6 class="fw-bold text-slate-900 mb-0"><i class="bi bi-building text-indigo-600 me-2"></i>Registered Client Types</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-0">
+                    <form method="post" action="{{ url_for('client_type_add') }}" class="d-flex gap-2 mb-3">
+                        <input type="text" name="name" class="form-control corp-input" placeholder="e.g. CORPORATE" required>
+                        <button type="submit" class="btn btn-indigo px-3 fw-bold"><i class="bi bi-plus-lg"></i></button>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 enterprise-table">
+                            <thead><tr><th style="width:75%;">NAME</th><th class="text-end pe-2">ACTION</th></tr></thead>
+                            <tbody>
+                                {% for t in types %}
+                                <tr>
+                                    <td><div class="d-flex align-items-center"><div class="category-dot bg-indigo-600 me-3"></div><span class="fw-bold text-slate-800">{{ t.name }}</span></div></td>
+                                    <td class="text-end pe-2">
+                                        <button type="button" class="btn btn-sm btn-light text-warning border-0 edit-ctype-btn" data-id="{{ t.id }}" data-name="{{ t.name }}" title="Edit"><i class="bi bi-pencil-square"></i></button>
+                                        <a href="{{ url_for('client_type_delete', type_id=t.id) }}" class="btn btn-sm btn-light text-danger border-0" title="Delete" onclick="return confirm('Delete client type {{ t.name }}?')"><i class="bi bi-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="2" class="text-center py-4 text-slate-400">No client types registered yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 bg-indigo-dark text-white rounded-4 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase ls-1 mb-3" style="font-size: 0.7rem; opacity: 0.8;">Data Architecture</h6>
+                    <p class="small opacity-75 mb-0">Client types let you segment partners (e.g. Corporate vs Retail) for reporting. Use clear, singular labels.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Client Type Modal -->
+<div class="modal fade" id="ctypeEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <form method="post" id="ctypeEditForm" action="">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold">Edit Client Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><input type="text" name="name" id="ctypeEditName" class="form-control corp-input" required></div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-indigo fw-bold">Save</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --indigo-600: #0ea5e9; --indigo-dark: #0c4a6e; --slate-900: #0f172a; --slate-800: #1e293b; --slate-400: #94a3b8; }
+    .fw-extrabold { font-weight: 800; }
+    .enterprise-table thead th { background-color: #f8fafc; color: var(--slate-400); font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; padding: 0.85rem 0.75rem; border-bottom: 1px solid #edf2f7; }
+    .enterprise-table tbody tr { transition: all 0.2s; border-bottom: 1px solid #f1f5f9; }
+    .enterprise-table tbody tr:hover { background-color: #f8fafc; }
+    .category-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .btn-indigo { background-color: var(--indigo-600); color: white; border: none; border-radius: 8px; }
+    .btn-indigo:hover { background-color: var(--indigo-dark); color: white; }
+    .corp-input { padding: 0.6rem 0.9rem; border: 2px solid #f1f5f9; border-radius: 10px; font-size: 0.9rem; background-color: #f8fafc; }
+    .corp-input:focus { background-color: #ffffff; border-color: var(--indigo-600); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.08); outline: none; }
+    .bg-indigo-dark { background: linear-gradient(135deg, #0284c7 0%, #0c4a6e 100%); }
+    .breadcrumb-item + .breadcrumb-item::before { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%23cbd5e1'/%3E%3C/svg%3E");}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctypeModal = new bootstrap.Modal(document.getElementById('ctypeEditModal'));
+    document.querySelectorAll('.edit-ctype-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('ctypeEditForm').action = '/client-types/' + this.dataset.id + '/edit';
+            document.getElementById('ctypeEditName').value = this.dataset.name;
+            ctypeModal.show();
+        });
+    });
+});
+</script>
 {% endblock %}
 '''
 
@@ -6353,12 +6975,14 @@ template_strings = {
     'vehicle_list.html': VEHICLE_LIST_TEMPLATE,
     'vehicle_form.html': VEHICLE_FORM_TEMPLATE,
     'vehicle_type_config.html': VEHICLE_TYPE_CONFIG_TEMPLATE,
+    'client_type_config.html': CLIENT_TYPE_CONFIG_TEMPLATE,
     'vehicle_tyres_select.html': VEHICLE_TYRES_SELECT_TEMPLATE,
     'vehicle_tyres.html': VEHICLE_TYRES_TEMPLATE,
     'vehicle_permits_select.html': VEHICLE_PERMITS_SELECT_TEMPLATE,
     'vehicle_permits.html': VEHICLE_PERMITS_TEMPLATE,
     'client_list.html': CLIENT_LIST_TEMPLATE,
     'client_form.html': CLIENT_FORM_TEMPLATE,
+    'client_rates_select.html': CLIENT_RATES_SELECT_TEMPLATE,
     'client_rates.html': CLIENT_RATES_TEMPLATE,
     'vendor_list.html': VENDOR_LIST_TEMPLATE,
     'vendor_form.html': VENDOR_FORM_TEMPLATE,
@@ -6432,13 +7056,21 @@ class VendorType(db.Model):
 class Vendor(db.Model):
     __tablename__ = 'vendors'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), nullable=False)
-    poc = db.Column(db.String(100), nullable=False)
-    ntn = db.Column(db.String(20))
-    address = db.Column(db.Text, nullable=False)
+    name = db.Column(db.String(150), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey('vendor_types.id'), nullable=True)
     type = db.relationship('VendorType', backref='vendors')
+    poc1_name = db.Column(db.String(100))
+    poc1_phone = db.Column(db.String(20))
+    poc1_email = db.Column(db.String(120))
+    poc2_name = db.Column(db.String(100))
+    poc2_phone = db.Column(db.String(20))
+    poc2_email = db.Column(db.String(120))
+    ntn = db.Column(db.String(30))
+    stn = db.Column(db.String(30))
+    term_of_service = db.Column(db.String(100))
+    billing_period = db.Column(db.String(50))
+    address = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
 
 class Vehicle(db.Model):
     __tablename__ = 'vehicles'
@@ -6509,12 +7141,28 @@ class VehicleMaintenance(db.Model):
     def is_overdue(self):
         return self.vehicle is not None and (self.vehicle.current_km or 0) >= self.next_due_km
 
+class ClientType(db.Model):
+    __tablename__ = 'client_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
 class Client(db.Model):
     __tablename__ = 'clients'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    poc = db.Column(db.String(100), nullable=False)
+    client_type_id = db.Column(db.Integer, db.ForeignKey('client_types.id'), nullable=True)
+    client_type = db.relationship('ClientType', backref='clients')
+    poc1_name = db.Column(db.String(100))
+    poc1_phone = db.Column(db.String(20))
+    poc1_email = db.Column(db.String(120))
+    poc2_name = db.Column(db.String(100))
+    poc2_phone = db.Column(db.String(20))
+    poc2_email = db.Column(db.String(120))
     ntn = db.Column(db.String(20), unique=True, nullable=False)
+    stn = db.Column(db.String(30))
+    term_of_service = db.Column(db.String(100))
+    billing_period = db.Column(db.String(50))
+    billing_company = db.Column(db.String(150))
     address = db.Column(db.Text, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -6525,10 +7173,54 @@ class ClientRate(db.Model):
     client = db.relationship('Client', backref='rates')
     route_id = db.Column(db.Integer, db.ForeignKey('routes.id'), nullable=False)
     route = db.relationship('Route')
-    rate = db.Column(db.Numeric(10,2), nullable=False)
-    fuel_price = db.Column(db.Numeric(10,2), nullable=False)
+    current_fuel_price = db.Column(db.Numeric(10, 2), nullable=False)
+    current_rate = db.Column(db.Numeric(12, 2), nullable=False)
+    effective_percent = db.Column(db.Numeric(5, 2), nullable=False)
+    rate_subject_to_revision = db.Column(db.Numeric(12, 2))
+    updated_fuel_price = db.Column(db.Numeric(10, 2), nullable=False)
+    fuel_price_change_percent = db.Column(db.Numeric(6, 2))
+    rate_adjustment = db.Column(db.Numeric(12, 2))
+    updated_trip_cost = db.Column(db.Numeric(12, 2))
     effective_date = db.Column(db.Date, nullable=False)
-    __table_args__ = (db.UniqueConstraint('client_id', 'route_id'),)
+
+    def recalculate(self):
+        current_fuel_price = float(self.current_fuel_price or 0)
+        current_rate = float(self.current_rate or 0)
+        effective_percent = float(self.effective_percent or 0)
+        updated_fuel_price = float(self.updated_fuel_price or 0)
+        self.rate_subject_to_revision = current_rate * (effective_percent / 100)
+        self.fuel_price_change_percent = (
+            (updated_fuel_price - current_fuel_price) / current_fuel_price * 100
+            if current_fuel_price else 0
+        )
+        self.rate_adjustment = float(self.rate_subject_to_revision) * (float(self.fuel_price_change_percent) / 100)
+        self.updated_trip_cost = current_rate + float(self.rate_adjustment)
+
+class DedicatedRate(db.Model):
+    __tablename__ = 'dedicated_rates'
+    DISTANCE_MODE_CHOICES = [('STANDARD', 'Standard (from Route)'), ('ACTUAL', 'Actual (from Job Orders)'), ('TRACKER', 'Tracker (manual)')]
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    client = db.relationship('Client', backref='dedicated_rates')
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'), nullable=False)
+    vehicle = db.relationship('Vehicle')
+    fixed_cost = db.Column(db.Numeric(12, 2), nullable=False)
+    month = db.Column(db.Date, nullable=False)
+    fuel_avg = db.Column(db.Numeric(6, 2), nullable=False)
+    fuel_price = db.Column(db.Numeric(10, 2), nullable=False)
+    variable_cost = db.Column(db.Numeric(10, 2))
+    route_id = db.Column(db.Integer, db.ForeignKey('routes.id'), nullable=False)
+    route = db.relationship('Route')
+    distance_mode = db.Column(db.String(10), default='STANDARD')
+    distance_km = db.Column(db.Numeric(10, 2))
+    effective_date = db.Column(db.Date, nullable=False)
+
+    def recalculate(self):
+        fuel_avg = float(self.fuel_avg or 0)
+        self.variable_cost = (float(self.fuel_price or 0) / fuel_avg) if fuel_avg else 0
+        if self.distance_mode in ('STANDARD', 'ACTUAL') and self.route_id:
+            route = self.route or Route.query.get(self.route_id)
+            self.distance_km = route.distance_km
 
 class City(db.Model):
     __tablename__ = 'cities'
@@ -6792,23 +7484,54 @@ class MaintenanceForm(Form):
 
 class ClientForm(Form):
     name = StringField('Client Name', validators=[DataRequired()])
-    poc = StringField('Point of Contact', validators=[DataRequired()])
-    ntn = StringField('NTN Number', validators=[DataRequired()])
+    client_type = SelectField('Client Type', coerce=int, choices=[], validate_choice=False)
+    poc1_name = StringField('Point of Contact 1', validators=[Optional()])
+    poc1_phone = StringField('Phone / Mobile Number', validators=[Optional()])
+    poc1_email = StringField('Email', validators=[Optional()])
+    poc2_name = StringField('Point of Contact 2', validators=[Optional()])
+    poc2_phone = StringField('Phone / Mobile Number', validators=[Optional()])
+    poc2_email = StringField('Email', validators=[Optional()])
+    ntn = StringField('NTN #', validators=[DataRequired()])
+    stn = StringField('STN #', validators=[Optional()])
+    term_of_service = StringField('Terms of Service', validators=[Optional()])
+    billing_period = StringField('Billing Period', validators=[Optional()])
+    billing_company = StringField('Billing Company', validators=[Optional()])
     address = TextAreaField('Address', validators=[DataRequired()])
     is_active = BooleanField('Active', default=True)
 
 class VendorForm(Form):
     name = StringField('Vendor Name', validators=[DataRequired()])
-    phone = StringField('Phone', validators=[DataRequired()])
-    poc = StringField('POC', validators=[DataRequired()])
-    ntn = StringField('NTN')
-    address = TextAreaField('Address', validators=[DataRequired()])
-    type = SelectField('Type', coerce=int, choices=[], validate_choice=False)
+    type = SelectField('Vendor Type', coerce=int, choices=[], validate_choice=False)
+    poc1_name = StringField('Point of Contact 1', validators=[Optional()])
+    poc1_phone = StringField('Phone / Mobile Number', validators=[Optional()])
+    poc1_email = StringField('Email', validators=[Optional()])
+    poc2_name = StringField('Point of Contact 2', validators=[Optional()])
+    poc2_phone = StringField('Phone / Mobile Number', validators=[Optional()])
+    poc2_email = StringField('Email', validators=[Optional()])
+    ntn = StringField('NTN #', validators=[Optional()])
+    stn = StringField('STN #', validators=[Optional()])
+    term_of_service = StringField('Terms of Service', validators=[Optional()])
+    billing_period = StringField('Billing Period', validators=[Optional()])
+    address = TextAreaField('Address', validators=[Optional()])
+    is_active = BooleanField('Active', default=True)
 
 class ClientRateForm(Form):
     route = SelectField('Route', coerce=int, choices=[], validate_choice=False)
-    rate = FloatField('Rate', validators=[DataRequired()])
+    current_fuel_price = FloatField('Current Fuel Price', validators=[DataRequired()])
+    current_rate = FloatField('Current Rate', validators=[DataRequired()])
+    effective_percent = FloatField('Effective %', validators=[DataRequired()])
+    updated_fuel_price = FloatField('Updated Fuel Price', validators=[DataRequired()])
+    effective_date = DateField('Effective Date', validators=[DataRequired()], format='%Y-%m-%d')
+
+class DedicatedRateForm(Form):
+    vehicle = SelectField('Vehicle', coerce=int, choices=[], validate_choice=False)
+    fixed_cost = FloatField('Fixed Cost', validators=[DataRequired()])
+    month = DateField('Month', validators=[DataRequired()], format='%Y-%m-%d')
+    fuel_avg = FloatField('Fuel Avg (Km/Ltr)', validators=[DataRequired()])
     fuel_price = FloatField('Fuel Price', validators=[DataRequired()])
+    route = SelectField('Route', coerce=int, choices=[], validate_choice=False)
+    distance_mode = SelectField('Distance Source', choices=DedicatedRate.DISTANCE_MODE_CHOICES, default='STANDARD')
+    distance_km = FloatField('Distance (Km)', validators=[Optional()])
     effective_date = DateField('Effective Date', validators=[DataRequired()], format='%Y-%m-%d')
 
 class ContainerForm(Form):
@@ -7319,6 +8042,63 @@ def vehicle_permits(vehicle_id):
         return redirect(url_for('vehicle_permits', vehicle_id=veh.id))
     return render_template('vehicle_permits.html', vehicle=veh, form=form)
 
+def _uppercase_fields(obj, fields):
+    for f in fields:
+        val = getattr(obj, f, None)
+        if val:
+            setattr(obj, f, val.strip().upper())
+
+CLIENT_UPPERCASE_FIELDS = ['name', 'poc1_name', 'poc1_email', 'poc2_name', 'poc2_email',
+                           'address', 'ntn', 'stn', 'term_of_service', 'billing_period', 'billing_company']
+VENDOR_UPPERCASE_FIELDS = ['name', 'poc1_name', 'poc1_email', 'poc2_name', 'poc2_email',
+                           'address', 'ntn', 'stn', 'term_of_service', 'billing_period']
+
+# Client Types (admin-extensible registry used by the Client form)
+@app.route('/client-types')
+@login_required
+def client_type_config():
+    types = ClientType.query.order_by(ClientType.name).all()
+    return render_template('client_type_config.html', types=types)
+
+@app.route('/client-types/add', methods=['POST'])
+@login_required
+def client_type_add():
+    name = (request.form.get('name') or '').strip().upper()
+    if name:
+        if ClientType.query.filter_by(name=name).first():
+            flash('This Client Type is already registered.')
+        else:
+            db.session.add(ClientType(name=name))
+            db.session.commit()
+            flash('Client Type added')
+    return redirect(url_for('client_type_config'))
+
+@app.route('/client-types/<int:type_id>/edit', methods=['POST'])
+@login_required
+def client_type_edit(type_id):
+    ct = ClientType.query.get_or_404(type_id)
+    name = (request.form.get('name') or '').strip().upper()
+    if name and not ClientType.query.filter(ClientType.name == name, ClientType.id != type_id).first():
+        ct.name = name
+        db.session.commit()
+        flash('Client Type updated')
+    else:
+        flash('That Client Type name is already registered.')
+    return redirect(url_for('client_type_config'))
+
+@app.route('/client-types/<int:type_id>/delete')
+@login_required
+def client_type_delete(type_id):
+    ct = ClientType.query.get_or_404(type_id)
+    try:
+        db.session.delete(ct)
+        db.session.commit()
+        flash('Client Type deleted')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f"Cannot delete '{ct.name}' - it's still assigned to a client.")
+    return redirect(url_for('client_type_config'))
+
 # Clients
 @app.route('/clients')
 @login_required
@@ -7330,9 +8110,14 @@ def client_list():
 @login_required
 def client_add():
     form = ClientForm(request.form)
+    form.client_type.choices = [(0,'None')] + [(t.id, t.name) for t in ClientType.query.order_by(ClientType.name).all()]
     if request.method == 'POST' and form.validate():
         client = Client()
+        type_choice = form.client_type.data
+        del form._fields['client_type']
         form.populate_obj(client)
+        client.client_type_id = type_choice if type_choice != 0 else None
+        _uppercase_fields(client, CLIENT_UPPERCASE_FIELDS)
         db.session.add(client)
         db.session.commit()
         flash('Client added')
@@ -7344,8 +8129,15 @@ def client_add():
 def client_edit(client_id):
     client = Client.query.get_or_404(client_id)
     form = ClientForm(request.form, obj=client)
+    form.client_type.choices = [(0,'None')] + [(t.id, t.name) for t in ClientType.query.order_by(ClientType.name).all()]
+    if request.method == 'GET':
+        form.client_type.data = client.client_type_id or 0
     if request.method == 'POST' and form.validate():
+        type_choice = form.client_type.data
+        del form._fields['client_type']
         form.populate_obj(client)
+        client.client_type_id = type_choice if type_choice != 0 else None
+        _uppercase_fields(client, CLIENT_UPPERCASE_FIELDS)
         db.session.commit()
         flash('Client updated')
         return redirect(url_for('client_list'))
@@ -7360,21 +8152,136 @@ def client_delete(client_id):
     flash('Client deleted')
     return redirect(url_for('client_list'))
 
+def _route_label(r):
+    return r.route_code if r.route_code else f"{r.origin.name}->{r.destination.name}"
+
+@app.route('/clients/rates')
+@login_required
+def client_rates_select():
+    clients = Client.query.order_by(Client.name).all()
+    return render_template('client_rates_select.html', clients=clients)
+
 @app.route('/clients/<int:client_id>/rates', methods=['GET','POST'])
 @login_required
 def client_rates(client_id):
     client = Client.query.get_or_404(client_id)
+    routes = Route.query.all()
+
     form = ClientRateForm(request.form)
-    form.route.choices = [(r.id, f"{r.origin.name}->{r.destination.name}") for r in Route.query.all()]
+    form.route.choices = [(r.id, _route_label(r)) for r in routes]
     if request.method == 'POST' and form.validate():
-        rate = ClientRate(client_id=client.id, route_id=form.route.data, rate=form.rate.data,
-                          fuel_price=form.fuel_price.data, effective_date=form.effective_date.data)
+        rate = ClientRate(client_id=client.id, route_id=form.route.data,
+                           current_fuel_price=form.current_fuel_price.data,
+                           current_rate=form.current_rate.data,
+                           effective_percent=form.effective_percent.data,
+                           updated_fuel_price=form.updated_fuel_price.data,
+                           effective_date=form.effective_date.data)
+        rate.recalculate()
         db.session.add(rate)
         db.session.commit()
         flash('Rate added')
         return redirect(url_for('client_rates', client_id=client.id))
-    rates = ClientRate.query.filter_by(client_id=client.id).all()
-    return render_template('client_rates.html', client=client, form=form, rates=rates)
+
+    dedicated_form = DedicatedRateForm()
+    dedicated_form.vehicle.choices = [(v.id, v.vehicle_number) for v in Vehicle.query.order_by(Vehicle.vehicle_number).all()]
+    dedicated_form.route.choices = [(r.id, _route_label(r)) for r in routes]
+
+    rates = ClientRate.query.filter_by(client_id=client.id).order_by(ClientRate.route_id, ClientRate.effective_date.desc(), ClientRate.id.desc()).all()
+    last_by_route = {}
+    for r in rates:
+        if r.route_id not in last_by_route:
+            last_by_route[r.route_id] = {
+                'fuel_price': float(r.updated_fuel_price), 'trip_cost': float(r.updated_trip_cost),
+                'effective_percent': float(r.effective_percent),
+            }
+
+    dedicated_rates = DedicatedRate.query.filter_by(client_id=client.id).order_by(DedicatedRate.route_id, DedicatedRate.effective_date.desc(), DedicatedRate.id.desc()).all()
+    routes_distance = {r.id: float(r.distance_km) for r in routes}
+
+    return render_template('client_rates.html', client=client, form=form, rates=rates,
+                            dedicated_form=dedicated_form, dedicated_rates=dedicated_rates,
+                            last_by_route_json=json.dumps(last_by_route),
+                            routes_distance_json=json.dumps(routes_distance))
+
+@app.route('/clients/<int:client_id>/rates/<int:rate_id>/edit', methods=['POST'])
+@login_required
+def client_rate_edit(client_id, rate_id):
+    client = Client.query.get_or_404(client_id)
+    rate = ClientRate.query.filter_by(id=rate_id, client_id=client.id).first_or_404()
+    form = ClientRateForm(request.form)
+    form.route.choices = [(r.id, _route_label(r)) for r in Route.query.all()]
+    if form.validate():
+        rate.route_id = form.route.data
+        rate.current_fuel_price = form.current_fuel_price.data
+        rate.current_rate = form.current_rate.data
+        rate.effective_percent = form.effective_percent.data
+        rate.updated_fuel_price = form.updated_fuel_price.data
+        rate.effective_date = form.effective_date.data
+        rate.recalculate()
+        db.session.commit()
+        flash('Rate updated')
+    return redirect(url_for('client_rates', client_id=client.id))
+
+@app.route('/clients/<int:client_id>/rates/<int:rate_id>/delete', methods=['POST'])
+@login_required
+def client_rate_delete(client_id, rate_id):
+    client = Client.query.get_or_404(client_id)
+    rate = ClientRate.query.filter_by(id=rate_id, client_id=client.id).first_or_404()
+    db.session.delete(rate)
+    db.session.commit()
+    flash('Rate deleted')
+    return redirect(url_for('client_rates', client_id=client.id))
+
+@app.route('/clients/<int:client_id>/dedicated-rates/add', methods=['POST'])
+@login_required
+def client_dedicated_rate_add(client_id):
+    client = Client.query.get_or_404(client_id)
+    form = DedicatedRateForm(request.form)
+    form.vehicle.choices = [(v.id, v.vehicle_number) for v in Vehicle.query.all()]
+    form.route.choices = [(r.id, _route_label(r)) for r in Route.query.all()]
+    if form.validate():
+        rate = DedicatedRate(client_id=client.id, vehicle_id=form.vehicle.data, fixed_cost=form.fixed_cost.data,
+                              month=form.month.data, fuel_avg=form.fuel_avg.data, fuel_price=form.fuel_price.data,
+                              route_id=form.route.data, distance_mode=form.distance_mode.data,
+                              distance_km=form.distance_km.data, effective_date=form.effective_date.data)
+        rate.recalculate()
+        db.session.add(rate)
+        db.session.commit()
+        flash('Dedicated rate added')
+    return redirect(url_for('client_rates', client_id=client.id) + '?mode=dedicated')
+
+@app.route('/clients/<int:client_id>/dedicated-rates/<int:rate_id>/edit', methods=['POST'])
+@login_required
+def client_dedicated_rate_edit(client_id, rate_id):
+    client = Client.query.get_or_404(client_id)
+    rate = DedicatedRate.query.filter_by(id=rate_id, client_id=client.id).first_or_404()
+    form = DedicatedRateForm(request.form)
+    form.vehicle.choices = [(v.id, v.vehicle_number) for v in Vehicle.query.all()]
+    form.route.choices = [(r.id, _route_label(r)) for r in Route.query.all()]
+    if form.validate():
+        rate.vehicle_id = form.vehicle.data
+        rate.fixed_cost = form.fixed_cost.data
+        rate.month = form.month.data
+        rate.fuel_avg = form.fuel_avg.data
+        rate.fuel_price = form.fuel_price.data
+        rate.route_id = form.route.data
+        rate.distance_mode = form.distance_mode.data
+        rate.distance_km = form.distance_km.data
+        rate.effective_date = form.effective_date.data
+        rate.recalculate()
+        db.session.commit()
+        flash('Dedicated rate updated')
+    return redirect(url_for('client_rates', client_id=client.id) + '?mode=dedicated')
+
+@app.route('/clients/<int:client_id>/dedicated-rates/<int:rate_id>/delete', methods=['POST'])
+@login_required
+def client_dedicated_rate_delete(client_id, rate_id):
+    client = Client.query.get_or_404(client_id)
+    rate = DedicatedRate.query.filter_by(id=rate_id, client_id=client.id).first_or_404()
+    db.session.delete(rate)
+    db.session.commit()
+    flash('Dedicated rate deleted')
+    return redirect(url_for('client_rates', client_id=client.id) + '?mode=dedicated')
 
 # Vendors
 @app.route('/vendors')
@@ -7387,10 +8294,14 @@ def vendor_list():
 @login_required
 def vendor_add():
     form = VendorForm(request.form)
-    form.type.choices = [(t.id, t.name) for t in VendorType.query.all()]
+    form.type.choices = [(0,'None')] + [(t.id, t.name) for t in VendorType.query.order_by(VendorType.name).all()]
     if request.method == 'POST' and form.validate():
         vendor = Vendor()
+        type_choice = form.type.data
+        del form._fields['type']
         form.populate_obj(vendor)
+        vendor.type_id = type_choice if type_choice != 0 else None
+        _uppercase_fields(vendor, VENDOR_UPPERCASE_FIELDS)
         db.session.add(vendor)
         db.session.commit()
         flash('Vendor added')
@@ -7402,9 +8313,15 @@ def vendor_add():
 def vendor_edit(vendor_id):
     vendor = Vendor.query.get_or_404(vendor_id)
     form = VendorForm(request.form, obj=vendor)
-    form.type.choices = [(t.id, t.name) for t in VendorType.query.all()]
+    form.type.choices = [(0,'None')] + [(t.id, t.name) for t in VendorType.query.order_by(VendorType.name).all()]
+    if request.method == 'GET':
+        form.type.data = vendor.type_id or 0
     if request.method == 'POST' and form.validate():
+        type_choice = form.type.data
+        del form._fields['type']
         form.populate_obj(vendor)
+        vendor.type_id = type_choice if type_choice != 0 else None
+        _uppercase_fields(vendor, VENDOR_UPPERCASE_FIELDS)
         db.session.commit()
         flash('Vendor updated')
         return redirect(url_for('vendor_list'))
@@ -7423,21 +8340,49 @@ def vendor_delete(vendor_id):
 @app.route('/vendor-types')
 @login_required
 def vendor_type_list():
-    types = VendorType.query.all()
+    types = VendorType.query.order_by(VendorType.name).all()
     return render_template('vendor_type_list.html', types=types)
 
 @app.route('/vendor-types/add', methods=['GET','POST'])
 @login_required
 def vendor_type_add():
     if request.method == 'POST':
-        name = request.form.get('name')
+        name = (request.form.get('name') or '').strip().upper()
         if name:
-            vt = VendorType(name=name)
-            db.session.add(vt)
-            db.session.commit()
-            flash('Vendor type added')
+            if VendorType.query.filter_by(name=name).first():
+                flash('This Vendor Type is already registered.')
+            else:
+                db.session.add(VendorType(name=name))
+                db.session.commit()
+                flash('Vendor type added')
         return redirect(url_for('vendor_type_list'))
     return render_template('vendor_type_form.html')
+
+@app.route('/vendor-types/<int:type_id>/edit', methods=['POST'])
+@login_required
+def vendor_type_edit(type_id):
+    vt = VendorType.query.get_or_404(type_id)
+    name = (request.form.get('name') or '').strip().upper()
+    if name and not VendorType.query.filter(VendorType.name == name, VendorType.id != type_id).first():
+        vt.name = name
+        db.session.commit()
+        flash('Vendor Type updated')
+    else:
+        flash('That Vendor Type name is already registered.')
+    return redirect(url_for('vendor_type_list'))
+
+@app.route('/vendor-types/<int:type_id>/delete')
+@login_required
+def vendor_type_delete(type_id):
+    vt = VendorType.query.get_or_404(type_id)
+    try:
+        db.session.delete(vt)
+        db.session.commit()
+        flash('Vendor Type deleted')
+    except IntegrityError:
+        db.session.rollback()
+        flash(f"Cannot delete '{vt.name}' - it's still assigned to a vendor.")
+    return redirect(url_for('vendor_type_list'))
 
 # Locations
 @app.route('/locations', methods=['GET','POST'])
