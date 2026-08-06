@@ -760,12 +760,12 @@ VEHICLE_LIST_TEMPLATE = '''
         
         {% for status_code, label, color, icon, count in status_configs %}
         <div class="col-xl-2 col-md-4 col-6">
-            <div class="card border-0 shadow-sm rounded-4 status-card position-relative overflow-hidden" 
-                 data-status="{{ status_code }}" 
+            <a href="{{ url_for('vehicle_list', status=status_code) }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm rounded-4 status-card position-relative overflow-hidden{{ ' status-card-active' if status_filter == status_code else '' }}"
                  style="cursor: pointer; transition: transform 0.2s;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
                              style="width: 38px; height: 38px; background-color: {{ color }}15;">
                             <i class="bi {{ icon }}" style="color: {{ color }}; font-size: 1.2rem;"></i>
                         </div>
@@ -774,8 +774,9 @@ VEHICLE_LIST_TEMPLATE = '''
                     <h6 class="text-uppercase fw-bold m-0" style="font-size: 0.65rem; letter-spacing: 1px; color: #64748b;">{{ label }}</h6>
                 </div>
                 <!-- Bottom accent line -->
-                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: {{ color }}; opacity: 0.6;"></div>
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: {{ color }}; opacity: {{ '1' if status_filter == status_code else '0.6' }};"></div>
             </div>
+            </a>
         </div>
         {% endfor %}
     </div>
@@ -784,12 +785,16 @@ VEHICLE_LIST_TEMPLATE = '''
     <div class="d-md-flex align-items-center justify-content-between mb-4 bg-white p-3 rounded-4 shadow-sm">
         <div>
             <h4 class="fw-bold text-dark mb-0">Fleet Intelligence</h4>
-            <span class="text-muted small">Operational overview of {{ vehicles|length }} active units</span>
+            <span class="text-muted small">
+                {% if status_filter %}Showing {{ vehicles|length }} unit(s) filtered by "{{ status_filter|replace('_',' ')|title }}"{% else %}Operational overview of {{ vehicles|length }} active units{% endif %}
+            </span>
         </div>
         <div class="d-flex gap-2 mt-3 mt-md-0">
-            <button id="clearFilterBtn" class="btn btn-light border btn-sm px-3 d-none">
-                <i class="bi bi-eraser me-1"></i>Reset
-            </button>
+            {% if status_filter %}
+            <a href="{{ url_for('vehicle_list') }}" class="btn btn-light border btn-sm px-3">
+                <i class="bi bi-eraser me-1"></i>Clear Filter
+            </a>
+            {% endif %}
             <div class="search-box-container me-2">
                 <i class="bi bi-search text-muted"></i>
                 <input type="text" id="vehicleSearch" class="form-control form-control-sm border-0 bg-light" placeholder="Search fleet..." style="width: 250px; border-radius: 8px;">
@@ -950,6 +955,7 @@ VEHICLE_LIST_TEMPLATE = '''
     }
 
     .status-card:hover { transform: translateY(-3px); }
+    .status-card-active { outline: 2px solid #0ea5e9; outline-offset: -1px; }
 </style>
 
 <script>
@@ -961,21 +967,6 @@ VEHICLE_LIST_TEMPLATE = '''
         });
     });
 
-    // Filtering & AJAX from your original code remains compatible
-    document.querySelectorAll('.status-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const status = this.dataset.status;
-            document.querySelectorAll('#vehicleTableBody tr').forEach(row => {
-                row.style.display = (row.dataset.status === status) ? '' : 'none';
-            });
-            document.getElementById('clearFilterBtn').classList.remove('d-none');
-        });
-    });
-
-    document.getElementById('clearFilterBtn').addEventListener('click', function() {
-        document.querySelectorAll('#vehicleTableBody tr').forEach(row => row.style.display = '');
-        this.classList.add('d-none');
-    });
 </script>
 {% endblock %}
 '''
@@ -7863,19 +7854,22 @@ def driver_delete(driver_id):
 @app.route('/vehicles')
 @login_required
 def vehicle_list():
-    vehicles = Vehicle.query.all()
-    idle_count = sum(1 for v in vehicles if v.status=='IDLE')
-    on_route_count = sum(1 for v in vehicles if v.status=='ON_ROUTE')
-    offloading_count = sum(1 for v in vehicles if v.status=='OFFLOADING')
-    detained_count = sum(1 for v in vehicles if v.status=='DETAINED')
-    maintenance_count = sum(1 for v in vehicles if v.status=='UNDER_MAINTENANCE')
-    on_loading_count = sum(1 for v in vehicles if v.status=='ON_LOADING')
+    status_filter = request.args.get('status')
+    all_vehicles = Vehicle.query.all()
+    idle_count = sum(1 for v in all_vehicles if v.status=='IDLE')
+    on_route_count = sum(1 for v in all_vehicles if v.status=='ON_ROUTE')
+    offloading_count = sum(1 for v in all_vehicles if v.status=='OFFLOADING')
+    detained_count = sum(1 for v in all_vehicles if v.status=='DETAINED')
+    maintenance_count = sum(1 for v in all_vehicles if v.status=='UNDER_MAINTENANCE')
+    on_loading_count = sum(1 for v in all_vehicles if v.status=='ON_LOADING')
+    vehicles = [v for v in all_vehicles if v.status == status_filter] if status_filter else all_vehicles
     today = date.today()
     warning_date = today + timedelta(days=15)
     return render_template('vehicle_list.html',
         vehicles=vehicles, idle_count=idle_count, on_route_count=on_route_count,
         offloading_count=offloading_count, detained_count=detained_count,
         maintenance_count=maintenance_count, on_loading_count=on_loading_count,
+        status_filter=status_filter,
         today=today, warning_date=warning_date)
 
 @app.route('/vehicles/add', methods=['GET','POST'])
